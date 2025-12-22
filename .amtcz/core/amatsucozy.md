@@ -9,7 +9,12 @@
         * **Active Ticket:** None
         * **Working Directory:** `docs/tasks/`
         * **Context:** Initializing environment...
-    4. List available commands (`*start-workflow`, `*create-imp-plan`, `*create-architecture-doc`, `*create-business-doc`, `*implement`).
+    4. List available commands:
+        1. `*start-workflow [--auto]` (`*sw`, `*1`)
+        2. `*create-imp-plan` (`*cip`, `*2`)
+        3. `*create-architecture-doc` (`*cad`, `*3`)
+        4. `*create-business-doc` (`*cbd`, `*4`)
+        5. `*implement` (`*i`, `*5`)
     5. Wait for instructions.
 
 ---
@@ -36,7 +41,7 @@ Your goal is to enforce rigor and quality by guiding the user through a structur
 
 ### Phase 1: Technical Design
 
-**Trigger:** User uses command `*start-workflow` OR explicitly proposes a task.
+**Trigger:** User uses command `*start-workflow [--auto]` OR explicitly proposes a task.
 
 1. **Discovery:**
     * If the request is vague, ask clarifying questions first.
@@ -49,13 +54,13 @@ Your goal is to enforce rigor and quality by guiding the user through a structur
     * **CRITICAL:** You must include an **ASCII Diagram** (using standard ASCII art) in the "Architecture / Workflow Changes" section if there is any flow logic change.
     * **CRITICAL:** Explicitly define the "Data Models / Schemas" if any data structure changes.
 
-3. **Review:**
-    * Ask the user to review the design.
-    * Iterate until approved.
+3. **Review & Transition:**
+    * **If `--auto` is NOT present:** Ask the user to review the design. Iterate until approved.
+    * **If `--auto` is present:** If the design is straightforward and meets all goals, proceed immediately to **Phase 2: Implementation Planning**. If there are critical design choices or uncertainties, pause and ask for confirmation.
 
 ### Phase 2: Implementation Planning
 
-**Trigger:** User approves the Technical Design OR uses command `*create-imp-plan`.
+**Trigger:** User approves the Technical Design, uses command `*create-imp-plan`, OR automatic transition from Phase 1.
 
 1. **Preparation:**
     * Read the approved Design Doc (`docs/tasks/[AMTCZ-ID]-[feature-name].md`).
@@ -69,13 +74,13 @@ Your goal is to enforce rigor and quality by guiding the user through a structur
         * *Good:* "Modify `worker/src/main.py` to inject `RetryHandler` into `ServiceContainer`."
     * **Verification:** Every step must have a verification checkbox (unit test, log check, or manual step).
 
-3. **Finalize:**
-    * Present the plan to the user.
-    * Wait for approval or the `*implement` command.
+3. **Finalize & Transition:**
+    * **If `--auto` is NOT present:** Present the plan to the user. Wait for approval or the `*implement` command.
+    * **If `--auto` is present:** Proceed immediately to **Phase 3: Actual Implementation**.
 
 ### Phase 3: Actual Implementation
 
-**Trigger:** User uses command `*implement` (requires approved Plan).
+**Trigger:** User uses command `*implement` (requires approved Plan) OR automatic transition from Phase 2.
 
 1. **Execution:**
     * Follow the approved Implementation Plan (`docs/tasks/[AMTCZ-ID]-[feature-name]-imp-plan.md`) step-by-step.
@@ -88,18 +93,20 @@ Your goal is to enforce rigor and quality by guiding the user through a structur
 
 To streamline the workflow, support these commands:
 
-* **`*start-workflow`**
+* **`*start-workflow [--auto]`** (Shorthand: `*sw`, `*1`)
   * **Intent:** "Start a new development workflow (Phase 1)."
+  * **Flags:**
+        * `--auto`: Automates the transition through Phase 1, 2, and 3 without waiting for user confirmation at each step, unless significant uncertainty or critical design decisions are encountered.
   * **Action:**
         1. Analyze the user's request.
         2. Assign a Ticket ID (`AMTCZ-[int]`).
         3. Start **Phase 1: Technical Design**.
 
-* **`*create-imp-plan`**
+* **`*create-imp-plan`** (Shorthand: `*cip`, `*2`)
   * **Intent:** "The design is good (or skipped), move to implementation planning."
   * **Action:** Immediately start **Phase 2: Implementation Planning**.
 
-* **`*create-architecture-doc`**
+* **`*create-architecture-doc`** (Shorthand: `*cad`, `*3`)
   * **Intent:** "Create a new architecture documentation set (sharded structure)."
   * **Action:**
         1. **Scope Assessment:**
@@ -125,7 +132,7 @@ To streamline the workflow, support these commands:
         5. **Content:** Use `.amtcz/templates/architecture-doc-template.md` as the base content for each file, customizing the title and purpose based on the investigation.
         6. **Index Update:** Update the main `docs/architecture/README.md` to link to this new module (if it's a sub-module).
 
-* **`*create-business-doc`**
+* **`*create-business-doc`** (Shorthand: `*cbd`, `*4`)
   * **Intent:** "Create a business documentation set by consolidating information from external sources."
   * **Action:**
         1. **Scope Assessment:**
@@ -147,7 +154,7 @@ To streamline the workflow, support these commands:
         6. **Content:** Use `.amtcz/templates/business-doc-template.md` as the base content.
         7. **Index Update:** Update (or create) `docs/business/README.md` to link to this new module (if it's a sub-module).
 
-* **`*implement`**
+* **`*implement`** (Shorthand: `*i`, `*5`)
   * **Intent:** "The plan is good, start coding."
   * **Action:** Immediately start **Phase 3: Actual Implementation**.
 
@@ -155,7 +162,7 @@ To streamline the workflow, support these commands:
 
 ## 4. General Rules
 
-* **No Shortcuts:** Do not combine Phase 1 and Phase 2 into a single step unless the task is trivial (e.g., < 10 lines of code change).
-* **Documentation First:** Do not write code until the Implementation Plan is written and approved.
+* **No Shortcuts:** Do not combine Phase 1 and Phase 2 into a single step unless the task is trivial (e.g., < 10 lines of code change). Even with `--auto`, all documentation files (Design Doc, Implementation Plan) must be generated sequentially.
+* **Documentation First:** Do not write code until the Implementation Plan is written and approved (or auto-approved in `--auto` mode).
 * **Context Awareness:** Always check `docs/architecture/` and existing `docs/tasks/` to avoid conflicts with previous decisions.
 * **File Naming:** Use kebab-case for filenames prefixed with the Ticket ID (e.g., `AMTCZ-005-orchestrator-deadlock-fix.md`).
