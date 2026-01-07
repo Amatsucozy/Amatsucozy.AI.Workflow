@@ -1,102 +1,79 @@
-# [Task Name/ID] Technical Design
+# [AMTCZ-ID] Technical Design: [Feature Name]
 
-> **Status:** [Draft/In Review/Approved]
-> **Date:** [YYYY-MM-DD]
-> **Author:** [Name]
-> **Related Issue/Story:** [Link]
-
----
-
-## 1. Problem Statement
-
-### 1.1 Context
-*Describe the current functionality or system state relevant to this task.*
-
-### 1.2 The Issue
-*Describe the specific problem, bug, or limitation. Use specific examples, error logs, or user scenarios.*
-
-### 1.3 Root Cause Analysis (Optional)
-*If fixing a bug, explain WHY it is happening.*
-*   **Current Behavior:** ...
-*   **Technical Constraint:** ...
+> **Status:** Draft / In Review / Approved
+> **Date:** YYYY-MM-DD
+> **Author:** Amatsucozy
+> **Related Issue:** [Link]
 
 ---
 
-## 2. Solution Overview
+## 1. Executive Summary
 
-### 2.1 Goals
-1.  [Goal 1]
-2.  [Goal 2]
+### 1.1 Problem Statement
+*What is broken or missing? Why is this important?*
 
-### 2.2 Non-Goals
-*   [What we are explicitly NOT doing]
-
-### 2.3 Proposed Approach
-*High-level summary of the solution. "We will replace X with Y by doing Z."*
+### 1.2 Proposed Solution
+*High-level architectural approach.*
 
 ---
 
-## 3. Technical Design
+## 2. Discovery & Context (MANDATORY)
 
-### 3.1 Architecture / Workflow Changes
+### 2.1 Existing Code Analysis
+*Evidence from `grep_search`.*
+- **Current Pattern:** `path/to/existing_file.ts` - describes how it works now.
+- **Dependencies:** List critical imports/libraries.
 
-*Use standard ASCII diagrams to visualize the change.*
+### 2.2 Database Impact
+*Will this change the schema?*
+- [ ] No DB changes.
+- [ ] New Table / Column: `[Details]`
 
-**Current Flow:**
-```
-[Component A] --(Old Event)--> [Component B]
-```
-
-**New Flow:**
-```
-[Component A] --(New Event)--> [New Component]
-      |
-      +--(Processed)--> [Component B]
-```
-
-### 3.2 Component Changes
-
-| Component | Change Type | Description |
-|-----------|-------------|-------------|
-| `Service A` | Modify | Add validation logic to `process_X` |
-| `Service B` | New | Create new `RetryHandler` class |
-| `DB Schema` | Update | Add `retry_count` column to `jobs` table |
-
-### 3.3 Data Models / Schemas
-*Define any new data structures, database schema changes, or event payloads.*
-
-**New Event: `EventName`**
-```json
-{
-  "id": "uuid",
-  "type": "event_type",
-  "payload": { ... }
-}
-```
-
-### 3.4 API Changes (if applicable)
-*   **POST** `/api/v1/resource`
-    *   **Request Body:** ...
-    *   **Response:** ...
+### 2.3 Security Implications
+*AuthN / AuthZ / Data Privacy*
+- [ ] No security impact.
+- [ ] Requires new permissions.
+- [ ] Handles PII/sensitive data.
 
 ---
 
-## 4. Implementation Strategy
+## 3. Technical Architecture
 
-### 4.1 Phasing
-*   **Phase 1:** [Description]
-*   **Phase 2:** [Description]
+### 3.1 Logical Flow
+```mermaid
+graph TD
+    A[Start] --> B{Condition}
+    B -->|Yes| C[Action]
+    B -->|No| D[End]
+```
 
-### 4.2 Risks & Mitigations
-*   **Risk:** [Risk Description]
-    *   **Mitigation:** [How we handle it]
+### 3.2 Component Changes (The "What")
 
-### 4.3 Rollback Strategy
-*   [How to revert if things go wrong]
+| File Path | Change | Description |
+|-----------|--------|-------------|
+| `/src/api/routes.ts` | Modify | Add `/new-endpoint` |
+| `/src/core/logic.ts` | New | Implement `LogicClass` |
+
+### 3.3 API Contract (If applicable)
+*   **POST** `/path`
+*   **Body:** `{ "key": "value" }`
 
 ---
 
-## 5. References
-*   [Link to existing code]
-*   [Link to external documentation]
+## 4. Design Decisions
 
+### 4.1 Rationale
+*Why this approach?*
+
+### 4.2 Alternatives Considered
+*Why NOT the other way?*
+
+### 4.3 Risks & Mitigations
+*   **Risk:** Performance on large datasets.
+*   **Mitigation:** Paginate API results.
+
+---
+
+## 5. Strategy
+*   **Phase 1:** ...
+*   **Phase 2:** ...

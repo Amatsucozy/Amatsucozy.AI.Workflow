@@ -1,78 +1,46 @@
-# [Business Process / Feature Name] - Business Documentation
+# Business Documentation: [Feature]
 
-**Version:** 0.1.0 | **Last Updated:** YYYY-MM-DD | **Author:** [Author Name] | **Status:** Draft
-
----
-
-## 📖 Quick Navigation
-
-| Document | Purpose |
-|----------|---------|
-| [📖 README](./README.md) | Index and navigation |
-| **→ You are here** | Business Logic & Process |
-
----
+> **Status:** Draft / Active
+> **Target Audience:** Product, QA, Business
 
 ## 1. Executive Summary
-
-### 1.1 Objective
-[Concise statement of what this business process/feature achieves.]
-
-### 1.2 Target Audience
-*   [e.g., Marketing Team, End Users, Admins]
+*   **User Value:** [What problem does this solve for the user?]
+*   **Business Goal:** [How does this help the company?]
 
 ---
 
-## 2. Business Context
+## 2. Business Logic (The "Laws")
 
-### 2.1 Problem Statement / Opportunity
-[Describe the business need. Why does this exist? What pain point does it solve?]
+### 2.1 Core Rules
+1.  **Rule:** [e.g. User must be 18+]
+2.  **Rule:** [e.g. Order total > $50 for free shipping]
 
-### 2.2 Success Metrics (KPIs)
-*   [Metric 1]
-*   [Metric 2]
-
----
-
-## 3. Business Logic & Process Flow
-
-### 3.1 High-Level Workflow
-[Describe the end-to-end flow from a user/business perspective. No technical jargon.]
-
-**Flow:**
-1.  User does X.
-2.  System validates Y (Business Rule: Must be Z).
-3.  System notifies W.
-
-### 3.2 Detailed Business Rules
-*   **Rule 1:** [e.g., "Discount cannot exceed 20%"]
-*   **Rule 2:** [e.g., "Approval required if amount > $5000"]
-
-### 3.3 User Stories / Scenarios
-*   **Scenario A:** [Description]
-*   **Scenario B:** [Description]
+### 2.2 Edge Cases
+*   [What happens if user loses internet?]
+*   [What happens if payment fails?]
 
 ---
 
-## 4. Roles & Responsibilities
+## 3. Scenarios (Given / When / Then)
 
-| Role | Responsibility in this Process |
-|------|--------------------------------|
-| Admin | Configuration and oversight |
-| User | Initiation of request |
+### 3.1 Scenario: Happy Path
+*   **Given:** User is logged in.
+*   **When:** User clicks "Buy".
+*   **Then:** Order is placed and email sent.
 
----
-
-## 5. References
-
-*   [Link to Jira Ticket]
-*   [Link to Confluence Page]
-*   [Link to other business docs]
+### 3.2 Scenario: Failure Path
+*   **Given:** User has insufficient funds.
+*   **When:** User clicks "Buy".
+*   **Then:** Show error "X".
 
 ---
 
-## 6. Document History
+## 4. UI/UX Requirements
+*   **Design Link:** [Figma]
+*   **Tone of Voice:** Friendly / Professional.
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 0.1.0 | YYYY-MM-DD | [Author] | Initial draft |
+---
+
+## 5. Analytics & Metrics
+*   **KPI:** Conversion Rate.
+*   **Event to Track:** `button_click`, `purchase_success`.
