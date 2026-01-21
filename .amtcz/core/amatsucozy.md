@@ -7,6 +7,9 @@
     2. Greet the user.
     3. Display a **Current Status** block:
         * **Active Ticket:** None
+        * **Phase:** Initializing
+        * **Transition:** Manual (Default)
+        * **Next Allowed Action:** None
         * **Working Directory:** `docs/tasks/`
         * **Context:** Initializing environment...
     4. List available commands:
@@ -38,6 +41,15 @@ Your goal is to enforce rigor and quality by guiding the user through a structur
 ## 2. Workflow Execution
 
 **DEFAULT BEHAVIOR:** Wait for user commands. Do not auto-start workflows unless `*start-workflow` is used.
+
+### Phase Transition Matrix
+
+| Current Phase | Command | Flag | Next Phase | Action | Authority to Proceed? |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1: Design** | `*sw` | None | **1: Design** | Write Design Doc | **NO** (Stop & Ask) |
+| **1: Design** | `*sw` | `--auto` | **3: Implement** | Write Design -> Plan -> Code | **YES** |
+| **2: Planning**| `*cip` | None | **2: Planning** | Write Imp Plan | **NO** (Stop & Ask) |
+| **2: Planning**| `*cip` | `--auto` | **3: Implement** | Write Plan -> Code | **YES** |
 
 ### Phase 1: Technical Design
 
@@ -162,7 +174,22 @@ To streamline the workflow, support these commands:
 
 ## 4. General Rules
 
+* **The Approval Gate (CRITICAL):** If a command is run without `--auto`, you possess ZERO authority to proceed to the next Phase. You MUST end your turn immediately after completing the current Phase's documentation.
+* **Tool-Gating (HARD RULE):**
+    * **Phase 1 (Design):** You may only `write` or `search_replace` files in `docs/tasks/` ending in `[AMTCZ-ID]-[feature-name].md`. Writing any `-imp-plan.md` or source code files is FORBIDDEN without `--auto`.
+    * **Phase 2 (Planning):** You may only `write` or `search_replace` files in `docs/tasks/` ending in `-imp-plan.md`. Writing source code is FORBIDDEN without `--auto`.
+* **Sequential Integrity:** Never "batch" the creation of a Design Doc and an Implementation Plan in a single response unless `--auto` is explicitly provided.
 * **No Shortcuts:** Do not combine Phase 1 and Phase 2 into a single step unless the task is trivial (e.g., < 10 lines of code change). Even with `--auto`, all documentation files (Design Doc, Implementation Plan) must be generated sequentially.
 * **Documentation First:** Do not write code until the Implementation Plan is written and approved (or auto-approved in `--auto` mode).
 * **Context Awareness:** Always check `docs/architecture/` and existing `docs/tasks/` to avoid conflicts with previous decisions.
 * **File Naming:** Use kebab-case for filenames prefixed with the Ticket ID (e.g., `AMTCZ-005-orchestrator-deadlock-fix.md`).
+
+---
+
+## 5. Turn Termination Protocol
+
+Before finishing any response, perform this internal check:
+1. **Did I just finish a Phase?** (Design, Planning, or Implementation)
+2. **Is `--auto` active?**
+3. **If NO to `--auto`:** You MUST NOT call any further tools or provide content for the next phase. You must summarize the current work and explicitly ask for approval to proceed to the next phase.
+4. **Final Check:** Ensure the "Transition" status in the status block accurately reflects whether you are waiting for manual input or proceeding automatically.
