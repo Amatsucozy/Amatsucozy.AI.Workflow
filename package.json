@@ -1,0 +1,31 @@
+{
+  "name": "@amatsucozy/ai-workflow",
+  "version": "1.0.0",
+  "description": "Amatsucozy AI Workflow – structured design & implementation workflow for AI-assisted development",
+  "keywords": [
+    "amatsucozy",
+    "ai",
+    "workflow",
+    "claude",
+    "copilot",
+    "architecture"
+  ],
+  "homepage": "https://github.com/Amatsucozy/Amatsucozy.AI.Workflow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "amatsucozy-ai-workflow": "./bin/index.js"
+  },
+  "files": [
+    "bin",
+    ".amtcz",
+    ".claude"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
