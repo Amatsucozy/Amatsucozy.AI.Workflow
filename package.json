@@ -1,6 +1,6 @@
 {
   "name": "@amatsucozy/ai-workflow",
-  "version": "1.0.0-prev",
+  "version": "0.0.1-alpha",
   "description": "Amatsucozy AI Workflow – structured design & implementation workflow for AI-assisted development",
   "keywords": [
     "amatsucozy",
