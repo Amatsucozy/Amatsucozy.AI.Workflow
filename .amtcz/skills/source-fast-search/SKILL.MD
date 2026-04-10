@@ -1,17 +1,29 @@
 ---
 name: source-fast-search
 type: discovery
-description: Answers project-related questions using the `context.md` file.
+description: Answers project-related questions using the master map and sharded context files.
 ---
 
-# Skill: Source Fast Search (Reader)
+# Skill: Source Fast Search (Sharded Reader)
 
 ## Logic
-1. **Check**: Look for `context.md` in the root directory.
-2. **Branching**:
-    - **IF FOUND**: Parse the file. Match user keywords (e.g., "Order processing") against the "Functional Description" column. Provide the exact file and class name.
-    - **IF MISSING**: Inform the user: *"I don't have a context map for this project yet. Use the 'source-analyzer' skill to index it for quick retrieval."*
-3. **Execution**: If the user asks for code details found in the map, only open the specific file identified.
+1. **Master Map Verification**: 
+    - Always check `/.amtcz/context.md` first.
+    - If missing, stop and notify the user: *"I don't have a project context map yet. Please use `*index-project` to initialize the environment."*
+2. **Project Identification**:
+    - Match user keywords (e.g., "API," "auth," "frontend") against the "Project Name" and "Tech Stack" in the master map.
+3. **Sharded Retrieval**:
+    - Retrieve the "Local Context Map" path for the relevant project.
+    - Open only that specific `context.md`.
+    - Match specific logic or class requests against the "Functional Description" column.
+4. **Unindexed Project Handling**:
+    - If the user asks about a project that is listed in the Master Map but has no local `context.md` link, respond with:
+      *"I know about the '{project}' module, but it hasn't been indexed for deep search yet. Would you like me to run `*index-project {project}` now?"*
+
+## Execution Rules
+- **Token Efficiency**: Never perform a recursive file search if the answer can be located via the sharded context files.
+- **Direct Access**: If a file path is found in the context map, open that file directly to answer detailed implementation questions.
 
 ## Success Criteria
-- Minimize tokens by reading the 1KB `context.md` instead of 1MB of source code.
+- Provide the exact File Path and Class Name within 1-2 turns.
+- Avoid "hallucinating" structure by strictly adhering to what is documented in the maps.
