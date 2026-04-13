@@ -1,6 +1,7 @@
 ---
 name: code-implementer
 description: Execution rules for Amatsucozy's Knight sub-agent. Read this skill before writing any source code. Defines test-first protocol, step completion marking, scope boundary, and when to escalate. Do not read for any other purpose.
+cache_control: ephemeral
 ---
 
 # Code Implementer

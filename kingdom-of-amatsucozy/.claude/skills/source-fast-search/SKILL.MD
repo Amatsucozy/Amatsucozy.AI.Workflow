@@ -1,7 +1,7 @@
 ---
 name: source-fast-search
-type: discovery
 description: Answers project-related questions using the master map and sharded context files.
+cache_control: ephemeral
 ---
 
 # Skill: Source Fast Search (Sharded Reader)

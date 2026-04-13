@@ -1,6 +1,7 @@
 ---
 name: arch-doc-writer
 description: Content rules for Amatsucozy architecture documentation sets. Read this skill when King is about to write architecture docs after a *cad command. Contains the architecture doc template, 7-file structure rules, and quality gate. Assumes Scout brief has already been read by King. Do not read source code directly — Scout already did that.
+cache_control: ephemeral
 ---
 
 # Architecture Doc Writer

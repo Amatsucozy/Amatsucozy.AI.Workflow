@@ -1,182 +1,255 @@
 ---
 name: source-navigator
-description: Traverses the two-level context graph to locate the root cause of a reported issue — following the dependency chain from a symptom (broken endpoint, failing feature, unexpected behavior) through controllers, services, and repositories without grepping or scanning directories. Use this skill automatically whenever a user reports a bug, asks "where does X happen", "which file handles Y", "why is endpoint Z broken", "trace this for me", or any question that requires following a code path through a layered architecture. Strongly prefer this over grep or recursive directory scanning whenever .amtcz/context.md exists.
+description: Answers any codebase question by traversing the two-level context graph — without grepping or scanning directories. Handles five query types: location lookup ("where does X live"), behavioural explanation ("what does X do"), reverse dependency lookup ("what depends on X"), project start up method ("How to start the project locally?"), and path traversal ("trace the flow from A to B"). Always searches across ALL projects in the graph, returning every location a concept appears — including SDK boundaries and external references. Use this skill automatically whenever a user asks about code location, behaviour, dependencies, or flow in a large codebase. Strongly prefer this over grep or directory scanning whenever .amtcz/context.md exists.
+cache_control: ephemeral
 ---
 
 # Skill: source-navigator
 
-Traces a code path through the context graph — alternating between context.md
-files (navigation) and source files (dependency confirmation) — until the
-fault location is isolated or a decision point is reached.
+A knowledge assistant for large codebases. Answers questions about where
+things live, what they do, what depends on them, and how flows connect —
+by reading the context graph, not scanning files.
 
 ---
 
 ## Pre-Flight Check
 
-Before any traversal, verify `.amtcz/context.md` exists and is readable.
+Before any query, verify `.amtcz/context.md` exists.
 
 | State | Action |
 |-------|--------|
-| Missing | Stop. Tell the user: "There's no context map yet. Run `*index` to build one first." |
-| Last Updated > 30 days | Warn the user, then proceed. Flag any gap found as `[POSSIBLY STALE]` rather than a hard error. |
-| Present and fresh | Begin traversal. |
+| Missing | Stop. Say: "There's no context map yet. Run `*index` to build one first." |
+| Last Updated > 30 days | Warn once, then proceed. Flag gaps as `[POSSIBLY STALE]`. |
+| Present | Identify the query mode and begin. |
 
 ---
 
-## Traversal Algorithm
+## Query Mode Detection
 
-Traversal alternates between two modes:
+Classify the user's question into one of four modes before doing anything else.
 
-- **Navigate** — read a context.md to identify a file
-- **Confirm** — open that file to extract its dependencies
+| Mode | Signal phrases | Example |
+|------|---------------|---------|
+| **Locate** | "where", "which file", "find", "where does X live" | "Where does the payment feature live?" |
+| **Explain** | "what does", "how does", "explain", "what is" | "What does PaymentClient.Charge do?" |
+| **Depend** | "what uses", "what depends on", "who calls", "references to" | "What depends on IUserRepository?" |
+| **Trace** | "trace", "follow", "flow from A to B", "how does X reach Y" | "Trace the flow from login to token issuance" |
 
-Never scan directories. Never grep. Follow the graph or stop.
-
----
-
-### Hop 1 — Identify the Owning Project (Navigate)
-
-Read `.amtcz/context.md` → Project Map.
-
-Match the user's symptom against the **Owns** column using plain language.
-Examples:
-
-| Symptom | Owns match |
-|---------|-----------|
-| "GET /api/users/{id} is broken" | project that owns HTTP endpoints |
-| "emails are not sending" | project that owns email dispatch |
-| "login always returns 401" | project that owns auth routes |
-| "PDF export is failing" | project that owns PDF export |
-
-**If one project matches clearly:** proceed.
-**If multiple projects could match:** list them and ask the user to confirm.
-Do not guess.
-
-→ Record: `owning_project`, `project_context_path`
+If the question is ambiguous, make your best classification, state it
+explicitly, and proceed. Do not ask for clarification upfront — the user
+can redirect if wrong.
 
 ---
 
-### Hop 2 — Find the Entry Point (Navigate)
+## Mode 1 — Locate
 
-Read `{project_context_path}`.
+**Goal:** Find every place a concept, class, feature, or method lives
+across the entire codebase, including SDK and external boundaries.
 
-**If the user named a specific route** (e.g., `GET /api/users/{id}`):
-→ Match directly against the Route Map.
-→ Record: `handler_class`, `handler_method`, `file_path`
+### Algorithm
 
-**If the project has no Route Map** (pure service/library project):
-→ The project is not an HTTP entry point. Return to `.amtcz/context.md`
-  and re-evaluate — the entry point likely lives in a different project.
-  Tell the user: "The `{project}` project has no HTTP routes — it's likely
-  a downstream dependency. Let me look for the entry point in another project."
-  Then re-run Hop 1 with more specificity.
+1. **Graph-wide scan:** Read `.amtcz/context.md`. For every indexed project,
+   read its `context.md`. Scan the Entity Map and Route Map of each.
 
-**If the user described a feature** (e.g., "the user creation flow"):
-→ Scan the Entity Map's Public Methods column for matching method names.
-→ If multiple candidates, list them and ask the user to confirm.
+2. **Match against all of these simultaneously:**
+   - Class / Interface names
+   - Method names in the Public Methods column
+   - Route paths in the Route Map
+   - Project Owns descriptions (for feature-level queries)
 
-**If Route Map has `[UNRESOLVED]` for the matched route:**
-→ Tell the user: "The route exists in the index but its handler isn't
-  mapped. The context may be stale — run `*index {project}` to refresh."
-→ Stop traversal.
+3. **Collect every match across all projects.** Do not stop at the first hit.
+
+4. **Check External References** in `.amtcz/context.md`. If any entry's
+   description matches the query:
+   - Record it as an external hit.
+   - Mark it `[EXTERNAL — NOT INDEXED]` if no context.md is linked.
+   - Do NOT attempt to traverse into it. Report the boundary.
+
+5. **Output all findings** using the Locate Result format.
+
+### Locate Result Format
+
+```
+## Locate: "{query}"
+
+Found {N} location(s) across {M} project(s).
+
+### In-Repo Locations
+
+**{ProjectName}**
+| Match | Type | File | Relevant Methods |
+|-------|------|------|-----------------|
+| PaymentService | Service | /src/core/Services/PaymentService.cs | Charge(request), Refund(id), GetStatus(id) |
+| IPaymentService | Interface | /src/core/Interfaces/IPaymentService.cs | Charge(request), Refund(id), GetStatus(id) |
+
+**{AnotherProject}**
+| Match | Type | File | Relevant Methods |
+|-------|------|------|-----------------|
+| PaymentController | Controller | /src/api/Controllers/PaymentController.cs | PostCharge(dto), PostRefund(dto) |
+| POST /api/payments/charge | Route | → PaymentController.PostCharge | — |
+
+### SDK / External Locations
+
+| Name | Location | Relevant Methods | Status |
+|------|----------|-----------------|--------|
+| PaymentClient | @org/payment-sdk | Charge(request), Refund(id) | [EXTERNAL — NOT INDEXED] |
+
+### Open Questions
+- {Any [STALE] or [UNRESOLVED] entries encountered}
+```
 
 ---
 
-### Hop 3 — First Source Read (Confirm)
+## Mode 2 — Explain
 
-Open `{file_path}`.
+**Goal:** Describe what a class or method does, using source files only
+when the context map doesn't contain enough information.
 
-Read only the minimum needed to extract dependencies. What "dependency" means
-varies by language — look for all of these:
+### Algorithm
 
-| Pattern | Language |
-|---------|----------|
-| Constructor parameters typed as interfaces/classes | C#, Java, TypeScript |
-| `@Injectable` / `@Inject` decorated params | Angular, NestJS |
-| Module-level `import` of service classes | Python, Node.js |
-| `__init__` parameters | Python |
-| `private readonly` / `private` field declarations | C#, TypeScript |
-| `services.GetService<T>()` calls | C# service locator |
+1. Run **Locate** first to find the target. If multiple matches exist,
+   list them all and ask the user which one to explain.
 
-Record every external class or interface this file depends on.
-Do NOT read full method implementations. You are mapping the graph, not
-debugging the logic.
+2. For each matched entity, read the source file at the recorded path.
+   Extract:
+   - Method signatures and parameter names
+   - Any XML / docstring / JSDoc documentation present
+   - The immediate logic of the target method only (not its full call tree)
+   - Dependencies injected or imported at the class level
 
-→ Record: `dependencies[]` — list of interface/class names this file depends on
+3. If the target is an interface, also find its concrete implementation
+   via the Entity Map and read that too.
+
+4. If the target is `[EXTERNAL — NOT INDEXED]`, report only what the
+   context map surface: name, location, relevant methods. Do not attempt
+   to fetch or inspect the external package.
+
+### Explain Result Format
+
+```
+## Explain: "{query}"
+
+### {ClassName}.{MethodName}
+**File:** {file_path}
+**Project:** {ProjectName}
+
+**What it does:**
+{Plain language explanation based on the source, 2-4 sentences.}
+
+**Parameters:**
+- {param}: {what it represents}
+
+**Dependencies used:**
+- {IServiceName} — {what it does in context of this method}
+
+**Implementation:** {In-repo | External SDK — cannot inspect}
+```
 
 ---
 
-### Hop N — Resolve Dependencies (Navigate → Confirm loop)
+## Mode 3 — Depend
 
-For each unresolved dependency in the queue:
+**Goal:** Find every class, method, or project that references the
+target — a reverse dependency lookup.
 
-1. **Navigate:** Return to `.amtcz/context.md`.
-   Find which project's Owns column best matches the dependency's domain.
-   Read that project's `context.md` → Entity Map.
-   Find the class and its file path.
+### Algorithm
 
-2. **Confirm:** Open that source file.
-   Extract its dependencies. Add new ones to the queue.
+1. Run **Locate** to confirm the target exists and get its exact name.
 
-3. Check exit conditions after each hop:
+2. Scan the Entity Map of every indexed project. Look for the target
+   name in the Public Methods column of other classes — these are callers.
+
+3. Open source files of candidate callers only when the context map is
+   ambiguous (e.g., same method name in multiple classes).
+
+4. Check External References — if an external project's description
+   references the target, include it as a dependent.
+
+5. Collect all findings. Group by project.
+
+### Depend Result Format
+
+```
+## Depends on "{target}": {N} reference(s) found
+
+### {ProjectName}
+| Caller | File | Via Method |
+|--------|------|-----------|
+| UserController | /src/api/Controllers/UserController.cs | GetById(id) |
+| UserService | /src/core/Services/UserService.cs | Create(dto) |
+
+### External
+| Name | Type | Notes |
+|------|------|-------|
+| @org/consumer-sdk | External package | References IUserService per External References table |
+```
+
+---
+
+## Mode 4 — Trace
+
+**Goal:** Follow the execution path from a start point (A) to an end
+point (B), listing every hop in order.
+
+### Algorithm
+
+1. **Locate A** — find the entry point using Mode 1.
+2. **Locate B** — find the destination using Mode 1. If B isn't clearly
+   defined, ask the user to confirm what "reaching B" looks like.
+
+3. **Walk the chain:**
+   - Open the source file for A. Extract dependencies.
+   - For each dependency, check the context map to identify its file.
+   - Open that file. Extract its dependencies.
+   - Repeat until B is reached or an exit condition triggers.
+
+4. **Exit conditions:**
 
 | Condition | Action |
 |-----------|--------|
-| A method with no further unresolved dependencies | Mark as **likely fault location**. Report findings. |
-| A dependency marked `[NOT LINKED]` in External References | Surface as **external blind spot**. Ask user if they want to inspect that repo manually. |
-| A class is missing from all context.md files | Mark as `[STALE]`. Tell the user: "I can't find `{ClassName}` in the index. Run `*index` to refresh, or open the file manually." |
-| 5 hops completed | **Pause.** Surface current findings. Ask: "Should I continue deeper into `{next_dependency}`, or does this give you enough to investigate?" |
-| User says stop | Report the traversal chain so far and the current open questions. |
+| B is reached | Report the complete chain. Stop. |
+| SDK boundary hit | Record: name, file, relevant methods. Stop. Do not cross. |
+| Class missing from all context maps | Mark `[STALE]`. Offer to re-index. Continue other branches. |
+| 6 hops without reaching B | Pause. Surface chain so far. Ask: "Continue into `{next}`, or is this enough?" |
+| Dead end — no further dependencies | Report: "Chain ends here without reaching B. Try another branch?" |
 
----
-
-## Output Format
-
-Report findings at any exit point using this structure:
+### Trace Result Format
 
 ```
-## Navigation Result
+## Trace: "{A}" → "{B}"
 
-**Symptom:** {user's original description}
-**Entry Point:** {ClassName.MethodName} → {file_path}
+### Path ({N} hops)
 
-### Traversal Chain
-1. {ProjectA} → {ClassA} → {file_path_a}
-2. {ProjectB} → {ClassB} → {file_path_b}
-3. ...
+1. **{ProjectA}** → {ClassA}.{MethodA} — `{file_path}`
+   ↓ calls
+2. **{ProjectB}** → {ClassB}.{MethodB} — `{file_path}`
+   ↓ calls
+3. **[SDK BOUNDARY]** → {SDKName}.{MethodName}
+   Relevant methods: {MethodName(params)}
+   Location: {package name or repo URL}
+   Status: [EXTERNAL — NOT INDEXED]
 
-### Likely Fault Location
-**File:** {file_path}
-**Class:** {ClassName}
-**Method:** {MethodName}
-**Reason:** {one sentence — why this is the likely fault point}
+### Summary
+{Plain language summary of what the chain does and where it ends.}
 
 ### Open Questions
-- {Any [STALE], [UNRESOLVED], or [NOT LINKED] entries encountered}
-- {Any decision points the user should confirm}
-```
-
-If the traversal was paused at the hop limit, add a **Next Steps** section:
-
-```
-### Next Steps
-To continue: I would follow `{ClassName}` into `{ProjectX}`.
-Say "continue" to proceed, or point me to a specific dependency.
+- {Unresolved entries, stale index warnings, unexplored branches}
 ```
 
 ---
 
 ## Hard Rules
 
-- **Never grep.** Never scan directories. Never list files. Only open files
-  you have a specific path for from the context graph.
-- **One file at a time.** Read source files only to extract dependencies —
-  not to speculatively explore implementations.
-- **Never guess a project.** If the Owns column doesn't clearly match
-  the symptom, ask the user before proceeding.
-- **Hop limit is a pause, not a failure.** At 5 hops, surface current
-  findings and ask for direction. Do not abandon the traversal or restart.
-- **Missing context = re-index prompt.** If a class isn't in context.md,
-  do not scan for it. Tell the user the map is stale and offer to re-index.
-- **One question at a time.** If you need clarification, ask the most
-  important question only. Do not present a list of questions.
+- **Never grep. Never scan.** Only open files with a specific path from
+  the context graph.
+- **Always search all projects.** Never stop at the first match. A concept
+  may live in multiple projects — all must be reported.
+- **SDK boundary = stop and report.** Never traverse into an external
+  package. Surface name, relevant methods, and mark `[EXTERNAL — NOT INDEXED]`.
+- **Missing from context = stale, not absent.** If a class isn't in any
+  context.md, say the map may be stale and offer `*index {project}`.
+  Never scan for it.
+- **One question at a time.** If clarification is needed mid-traversal,
+  ask only the most blocking question.
+- **Hop limit is a pause, not a failure.** Surface findings and ask for
+  direction. Never silently abandon a trace.

@@ -1,6 +1,7 @@
 ---
 name: imp-plan-writer
 description: Content rules and quality bar for Amatsucozy implementation plans. Read this skill when Steward is about to write a plan. Contains the plan template, step atomicity rules, verification requirements, and the mapping requirement from design doc component changes. Do not read for any other purpose.
+cache_control: ephemeral
 ---
 
 # Implementation Plan Writer

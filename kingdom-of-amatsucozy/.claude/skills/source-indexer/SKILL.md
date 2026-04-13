@@ -1,6 +1,7 @@
 ---
 name: source-indexer
 description: Builds and maintains a navigable two-level context graph for any codebase. Creates a master map at .amtcz/context.md (listing all projects and their plain-language responsibilities) and per-project context.md files (listing every public class, its public methods, and all HTTP routes). Use this skill whenever the user wants to index a project, set up AI navigation for a repo, refresh a stale map, or says anything like "index this", "build context", "map the codebase", "update the context map", or "re-index". Also trigger automatically when source-navigator reports a [STALE] or [MISSING] entry during traversal.
+cache_control: ephemeral
 ---
 
 # Skill: source-indexer

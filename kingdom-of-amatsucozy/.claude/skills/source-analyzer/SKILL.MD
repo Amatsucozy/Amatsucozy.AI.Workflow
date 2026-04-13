@@ -1,12 +1,7 @@
 ---
 name: source-analyzer
-type: orchestrator
-parameters:
-  - name: project_name
-    optional: true
-    description: "The folder name of the specific project to index (e.g., 'project_Csharp')."
-dependencies: [ "parsers/*" ]
 description: "Scans the codebase to generate sharded context.md files and a master index map."
+cache_control: ephemeral
 ---
 
 # Skill: Targeted Source Analyzer (Writer)

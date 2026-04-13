@@ -1,6 +1,7 @@
 ---
 name: design-doc-writer
 description: Content rules and quality bar for Amatsucozy design documents. Read this skill when King is about to write a design doc. Contains the design template, ASCII diagram rules, mandatory sections, and quality gate checklist. Do not read for any other purpose.
+cache_control: ephemeral
 ---
 
 # Design Doc Writer
