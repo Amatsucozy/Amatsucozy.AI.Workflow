@@ -12,6 +12,7 @@ Structured software design and implementation workflow. Three commands, four age
 | **Scout** | Haiku | Codebase investigation · writes brief files · dies after each run |
 | **Steward** | Haiku | Implementation planning · writes plan file · dies after each run |
 | **Knight** | Sonnet | Code execution · test-first · failure escalation · dies after each run |
+| **Chancellor** | Haiku | Post-execution audit · validates execution vs design + plan · manual only |
 | **Sentinel** | — (skill) | Phase gate authority · consulted at every phase boundary |
 
 ---
@@ -24,6 +25,7 @@ Structured software design and implementation workflow. Three commands, four age
 | `*start-workflow [--auto]` | `*sw` | Scout → King writes design → Steward → Knight |
 | `*create-architecture-doc` | `*cad` | Scout → King writes 7-file arch set |
 | `*implement` | `*i` | Knight executes existing plan |
+| `*audit` | — | Chancellor validates execution vs design + plan (manual, post-completion) |
 
 ---
 
@@ -37,6 +39,8 @@ Structured software design and implementation workflow. Three commands, four age
     {feature_id}-blocker.md    ← Knight failure escalation
   checkpoints/
     {feature_id}.md            ← King phase checkpoint (session resume)
+  audits/
+    {feature_id}-audit.md      ← Chancellor audit report (written on *audit)
 
 .claude/
   agents/
@@ -44,6 +48,7 @@ Structured software design and implementation workflow. Three commands, four age
     scout.md                   ← Haiku · investigation sub-agent
     steward.md                 ← Haiku · planning sub-agent
     knight.md                  ← Sonnet · implementation sub-agent
+    chancellor.md              ← Haiku · post-execution audit sub-agent
   skills/
     sentinel/
       SKILL.md                 ← gate logic · cached (cache_control: ephemeral)
