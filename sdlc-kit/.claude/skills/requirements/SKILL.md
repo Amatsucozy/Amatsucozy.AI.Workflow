@@ -1,6 +1,7 @@
 ---
 name: requirements
-description: Requirements elicitation and ticket writing for the analyst role. Use at task intake — whenever the human describes work to do, reports a bug, pastes a Jira ticket, or asks for a feature. Governs the clarifying-question process and the ticket document at docs/tasks/<id>/ticket.md. Always use before dispatching any researcher or writing any plan.
+description: >
+  Requirements elicitation and ticket writing for the analyst role. Use at task intake — whenever the human describes work to do, reports a bug, pastes a Jira ticket, or asks for a feature. Governs the clarifying-question process and the ticket document at docs/tasks/<id>/ticket.md. Always use before dispatching any researcher or writing any plan.
 ---
 
 # Requirements & Ticket Writing

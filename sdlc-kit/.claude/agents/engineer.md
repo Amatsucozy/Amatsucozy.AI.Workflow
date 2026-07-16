@@ -1,7 +1,7 @@
 ---
 name: engineer
 description: Implementation specialist. Invoke to execute exactly one phase of an approved work plan — writing or modifying code within a declared file scope. Use whenever a plan phase is ready for implementation. Requires a self-contained prompt containing the ticket, the current phase's steps, and the file scope. Does not build, does not run tests, does not design.
-tools: Read, Edit, Write, Glob, Grep, Bash
+tools: Read, Edit, Write, Glob, Grep, Bash, Skill
 model: sonnet
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: sdlc-orchestrator
-description: SDLC pipeline orchestrator — invoke on demand to run a task end-to-end through requirements, research, planning, implementation, and verification with the pipeline's subagents (researcher, engineer, reviewer). Use when the human asks to work a ticket, start a task, resume in-flight pipeline work under docs/tasks/, or explicitly invokes the orchestrator. Not for ad-hoc questions or trivial edits — this skill governs full task lifecycles only.
+description: >
+  SDLC pipeline orchestrator — invoke on demand to run a task end-to-end through requirements, research, planning, implementation, and verification with the pipeline's subagents (researcher, engineer, reviewer). Use when the human asks to work a ticket, start a task, resume in-flight pipeline work under docs/tasks/, or explicitly invokes the orchestrator. Not for ad-hoc questions or trivial edits — this skill governs full task lifecycles only.
 ---
 
 # SDLC Orchestrator

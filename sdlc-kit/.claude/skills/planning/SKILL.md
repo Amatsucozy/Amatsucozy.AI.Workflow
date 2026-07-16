@@ -1,6 +1,7 @@
 ---
 name: planning
-description: Design-stage standards for the orchestrator when writing work plans and verification plans. Use in plan mode after research completes and before any engineer dispatch — whenever drafting, revising, or splitting an implementation plan, and whenever defining verification gates. Governs docs/tasks/<id>/work-plan.md and verification-plan.md; the two are always written together.
+description: >
+  Design-stage standards for the orchestrator when writing work plans and verification plans. Use in plan mode after research completes and before any engineer dispatch — whenever drafting, revising, or splitting an implementation plan, and whenever defining verification gates. Governs docs/tasks/<id>/work-plan.md and verification-plan.md; the two are always written together.
 ---
 
 # Planning Standards

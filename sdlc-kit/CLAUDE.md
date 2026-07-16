@@ -21,11 +21,16 @@ routing — it is a required first step, not a suggestion:
    guidance BEFORE any new investigation or code changes.
 5. None confirmed → FRESH problem: proceed with normal investigation. Do not
    force unrelated entries into context.
-6. Any decision that relies on an entry — or deliberately overrides one — must
+6. Scan the installed skill listing.
+   Invoke EVERY skill whose description matches the current task — skills compose;
+   loading one does not preclude another.
+   A task may legitimately need source-navigator + dotnet-unit-testing together.
+   Cite by name any skill you considered and deliberately skipped.
+7. Any decision that relies on an entry — or deliberately overrides one — must
    cite it by slug.
-7. If a fresh problem's solution is likely to help again in this repository,
+8. If a fresh problem's solution is likely to help again in this repository,
    invoke the `experiences` skill to capture it before closing the task.
-8. Subagents do NOT inherit this routing — their context starts empty. When
+9. Subagents do NOT inherit this routing — their context starts empty. When
    spawning a subagent of any kind, attach the confirmed-relevant entries'
    Lesson and Applies When/Not When sections (with slugs) directly in the
    dispatch prompt. Attach only confirmed matches, never unconfirmed

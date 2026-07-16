@@ -1,6 +1,7 @@
 ---
 name: reporting
-description: Inline turn reports and final-report consolidation. Use at the end of every turn in which work happened on an active task (report inline in chat, as a table), and at task close to produce docs/tasks/<id>/final-report.md which becomes the PR body. Also governs the durable progress fields in ticket frontmatter.
+description: >
+  Inline turn reports and final-report consolidation. Use at the end of every turn in which work happened on an active task (report inline in chat, as a table), and at task close to produce docs/tasks/<id>/final-report.md which becomes the PR body. Also governs the durable progress fields in ticket frontmatter.
 ---
 
 # Reporting
