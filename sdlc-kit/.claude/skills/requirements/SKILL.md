@@ -41,6 +41,8 @@ id: <id>
 source: jira | user
 priority: high | medium | low
 status: new
+workflow: full | trivial
+follows: <parent task id>        # follow-up tasks only; omit otherwise
 created: YYYY-MM-DD
 ---
 
@@ -63,6 +65,35 @@ language — the design stage owns the how.>
 ## References
 <Jira link, related tasks, prior art; "none">
 ```
+
+`workflow` records the routing decision once, at intake: `full` runs every
+stage; `trivial` is the single-file/obvious/reversible escape hatch. Default
+`full` — downgrading to `trivial` is an explicit choice, visible and auditable
+in the frontmatter, never an in-flight improvisation.
+
+## Follow-Up Tasks
+
+Work that continues a task whose pipeline already ran — a bug found after
+implementation, a build broken by the change, an extension of delivered
+behavior — is a NEW task, never a reopening of the old one. Full workflow,
+full circle: requirements, research, plan, implement, verify. "The parent
+already did research" is not a reason to skip research here.
+
+- **Id:** `<parent-id>-fix-<slug>` (e.g. `proj-1234-fix-build-errors`).
+  The slug names the problem, not a counter — a second follow-up on the same
+  parent gets its own descriptive slug.
+- **Frontmatter:** set `follows: <parent-id>` even though the id encodes it —
+  lineage is machine state, never parsed out of string prefixes, and it keeps
+  chains explicit when a follow-up's parent is itself a follow-up.
+- **References:** the parent's `ticket.md`, `research.md`, and
+  `final-report.md` are mandatory reference entries. Research inherits: the
+  follow-up's researcher dispatch attaches the parent's map and scopes only
+  the delta ("prior map attached; verify staleness and map only the failure
+  area") — never a blind full re-run, never a blind reuse.
+- Everything else is a normal task: same folder shape under
+  `docs/tasks/<id>/`, same frontmatter lifecycle, same phase-commit markers
+  (`<id>: phase N — ...` — the suffixed id keeps rollback greps from
+  cross-matching the parent's commits).
 
 ## Quality Bar
 
