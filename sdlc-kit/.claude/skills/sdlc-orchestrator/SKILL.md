@@ -24,9 +24,15 @@ against a task that already ran — a build error, a bug, wrong behavior, an
 extension — classify before acting; never begin ad-hoc investigation:
 
 1. Parent ticket status ≠ `done` (never passed its final gate) → this is the
-   existing task's verification loop. A human-reported failure IS a gate FAIL
-   verdict, delivered by the human instead of the reviewer — handle it under
-   Workflow step 5, same as any FAIL.
+   existing task's verification loop. **Rehydrate before routing** — a fresh
+   session holds none of the context the plan was made with. Read, in one
+   batched turn: `ticket.md`, `work-plan.md` (Strategy, the phase under
+   review, any fix-phases), the relevant gate in `verification-plan.md`, and
+   `research.md`. The approved plan's Strategy remains binding across
+   sessions: a fix that departs from it is a plan change requiring human
+   approval, never a fresh design. Then handle the failure under Workflow
+   step 5 — all of it, including its experience routing, which a new session
+   has not run.
 2. Parent ticket `done`, or the report describes new/changed behavior rather
    than a failure of the planned behavior → open a follow-up task
    (`requirements` skill, Follow-Up Tasks section) and run the FULL workflow.
