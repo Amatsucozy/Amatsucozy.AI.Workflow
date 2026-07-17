@@ -15,8 +15,8 @@ forward. This file maps old to new and states what changed and why.
 | Chancellor (post-exec audit) + Sentinel | `reviewer` subagent | Merged. Key upgrade: guaranteed fresh context — receives artifacts only, never transcripts, so it can't inherit the implementer's bias. |
 | Scoped MCP subagents (GitHub, Jira) | **Retired** — MCP attaches to the main thread | The quarantine pattern solved eager tool-definition loading, which Claude Code now defers by default (definitions load on demand via tool search). Liaison hops also condensed Jira tickets before the analyst saw them — lossy exactly where fidelity matters most. The payload discipline survives as the MCP Usage rules in the sdlc-orchestrator skill. |
 | Experience layer (docs/experiences/) | `experiences` skill | Format kept (slug + semantic frontmatter). New: mandatory read-path citation in plan Strategy, write-path quality bar, observed-once → proven lifecycle. |
-| amtcz-comms document templates | Inlined into each role's prompt/skill | Formats live where they're consumed — no separate skill trigger needed. Field names and section semantics preserved (Problem/Target/AC, phases, gates, Deviations). |
-| Checkpoint resume | Phase-boundary commits + SessionStart hook | Upgraded from instruction to enforcement: the hook injects in-flight tasks deterministically before the first message. |
+| amtcz-comms document templates | Inlined into each role's prompt/skill | Formats live where they're consumed — no separate skill trigger needed. Field names and section semantics preserved (Problem/Target/AC, phases, gates, Deviations). Document frontmatter did NOT survive: task documents are content-only; all task state consolidates into one `docs/tasks/<id>/main.yaml` per task, eliminating cross-document state conflicts. |
+| Checkpoint resume | Phase-boundary commits + the orchestrator's On Invocation scan of `docs/tasks/*/main.yaml` | Resume reads one small state file per task plus git. (SessionStart/Stop hooks were tried and retired — no observed value.) |
 
 ## What the Successor Fixes
 
@@ -31,10 +31,13 @@ forward. This file maps old to new and states what changed and why.
    trigger expensive builds.
 4. **Silent drift** — Deviations reporting required at three layers (engineer
    output, reviewer scope-drift findings, orchestrator loop reports).
-5. **Startup amnesia** — the orchestrator skill's On Invocation protocol checks
-   docs/tasks/ and derives the change view from git before taking work.
-   (SessionStart/Stop hooks were tried and retired — no observed value.)
-6. **Legibility** — SDLC role names; a colleague understands the structure
+5. **Startup amnesia** — the orchestrator skill's On Invocation protocol scans
+   `docs/tasks/*/main.yaml` and derives the change view from git before taking
+   work. (SessionStart/Stop hooks were tried and retired — no observed value.)
+6. **State scatter** — one state file per task (main.yaml); documents carry no
+   frontmatter, so status/phase/approval cannot disagree across files, and the
+   state file's git log is the task timeline.
+7. **Legibility** — SDLC role names; a colleague understands the structure
    without the AMTCZ glossary.
 
 ## Migration Steps
@@ -42,14 +45,18 @@ forward. This file maps old to new and states what changed and why.
 1. Unzip into the repo root (or merge `.claude/` if one exists).
 2. Move `docs/experiences/` over unchanged; add missing frontmatter fields
    (`symptom`, `confidence`) opportunistically as entries get touched.
+   (Experience entries KEEP their frontmatter — it is their retrieval index;
+   only task documents went frontmatter-free.)
 3. Attach your Jira/GitHub MCP declarations at project scope so the main
    thread can use them (e.g. `.mcp.json`); do not attach any MCP server to the
    worker subagents.
 4. Install `source-navigator` / `source-indexer` skills where subagents can see
    them (project `.claude/skills/` or `~/.claude/skills/`).
 5. In-flight AMTCZ tasks: finish them under the old system; start new tasks
-   here. The docs/tasks layout is compatible enough that the SessionStart hook
-   will surface both.
+   here. The On Invocation scan covers new-style tasks via main.yaml; surface
+   old-style in-flight tasks manually (their state lives in ticket
+   frontmatter). Do not backfill main.yaml for tasks you intend to finish
+   under AMTCZ.
 6. Retire agent files for King/Scout/Steward/Knight/Chancellor/Sentinel once no
    in-flight task references them.
 

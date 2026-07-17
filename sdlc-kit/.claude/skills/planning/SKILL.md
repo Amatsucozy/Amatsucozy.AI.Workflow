@@ -11,16 +11,12 @@ and each gate becomes a self-contained reviewer prompt. Write for those consumer
 The plans ship as a pair — a work plan without a verification plan is unreviewable,
 and a verification plan without a work plan has nothing to gate.
 
+Plans carry no frontmatter — documents are content, task state lives in
+`docs/tasks/<id>/main.yaml` (the `approved` field records plan approval).
+
 ## Work Plan — `docs/tasks/<id>/work-plan.md`
 
 ```markdown
----
-id: <id>
-based-on: docs/tasks/<id>/research.md
-phases: <N>
-approved: pending | <date>
----
-
 ## Strategy
 <2–4 sentences: the chosen approach, and the rejected alternative with one
 sentence on why — engineers who don't know why an option lost drift back into it.>
@@ -41,6 +37,9 @@ Exit state: <coherent, committable state — enables checkpoint resume + rollbac
 ```
 
 Rules:
+- **Research is a precondition, not a field.** `docs/tasks/<id>/research.md`
+  must exist on disk before drafting — the orchestrator enforces this; the
+  plan does not carry a `based-on` pointer.
 - **Phase = dispatch unit.** Size each phase so its prompt (ticket + phase +
   scope) is self-contained; the engineer cannot ask follow-ups.
 - **Name the executor per phase.** Default `engineer`; choose a specialist
@@ -67,11 +66,6 @@ Builds are expensive here. Verification is therefore batched into few gates, not
 sprinkled per step — this is the entire reason the two plans are separate files.
 
 ```markdown
----
-id: <id>
-work-plan: docs/tasks/<id>/work-plan.md
----
-
 ## Gate Schedule
 | Gate | After | Build | Tests | Est. cost |
 |---|---|---|---|---|
@@ -102,5 +96,6 @@ Rules:
 ## Approval
 
 Present both plans to the human in plan mode and get explicit approval before the
-first engineer dispatch. Record the approval date in frontmatter. Any later change
-to an approved plan is re-presented as a diff, not silently rewritten.
+first engineer dispatch. Record the approval date in main.yaml's `approved`
+field. Any later change to an approved plan is re-presented as a diff, not
+silently rewritten.

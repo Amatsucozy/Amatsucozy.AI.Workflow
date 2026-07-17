@@ -16,6 +16,7 @@ an experiences entry (domain: process).
 | Nit cap per review | "a handful" | agents/pr-reviewer.md | anti-noise | colleagues report reviews feel nitpicky or toothless |
 | Orchestrator skill length | ~150 lines | skills/sdlc-orchestrator | instruction-following degrades past this | rules demonstrably ignored → cut or promote to output style |
 | Turn-report trigger | any turn that changed the repo | sdlc-orchestrator step 6 (inline table; loop files retired for token cost) | "no silent work" | resume quality degrades or tuning needs hard telemetry → resume file-based reports |
+| main.yaml update discipline | instruction-only (reporting skill; no hook) | skills/reporting, sdlc-orchestrator step 6 | hooks retired on no-observed-value; ~5–8 writes per task don't justify a per-turn reminder riding every cache read | main.yaml stale at any resume in the first 5 tickets → add a conditional Stop hook (warn only when last `<id>: phase N` commit disagrees with main.yaml phase), not a blind reminder |
 | Experience write bar | >30 min generalizable failure | skills/experiences | noise control | layer grows fast with entries never retrieved (raise), or repeated re-learning (lower) |
 
 Reading the evidence: loop-report telemetry (reporting skill) sums into each

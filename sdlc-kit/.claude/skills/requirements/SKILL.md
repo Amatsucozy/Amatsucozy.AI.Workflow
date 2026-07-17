@@ -1,7 +1,7 @@
 ---
 name: requirements
 description: >
-  Requirements elicitation and ticket writing for the analyst role. Use at task intake — whenever the human describes work to do, reports a bug, pastes a Jira ticket, or asks for a feature. Governs the clarifying-question process and the ticket document at docs/tasks/<id>/ticket.md. Always use before dispatching any researcher or writing any plan.
+  Requirements elicitation and ticket writing for the analyst role. Use at task intake — whenever the human describes work to do, reports a bug, pastes a Jira ticket, or asks for a feature. Governs the clarifying-question process, the ticket document at docs/tasks/<id>/ticket.md, and the creation of the task state file docs/tasks/<id>/main.yaml. Always use before dispatching any researcher or writing any plan.
 ---
 
 # Requirements & Ticket Writing
@@ -30,22 +30,44 @@ repo. Two or three sharp questions beat a form. If the human says "just use your
 judgment", record the judgment you chose in the ticket's Constraints so it is
 visible and reversible.
 
-## Ticket Format
+## Task State File — `docs/tasks/<id>/main.yaml`
 
-Write to `docs/tasks/<id>/ticket.md`, where `<id>` is the lowercased Jira key or
-`adhoc-<slug>`. Exactly this structure:
+Written at intake, in the same turn as the ticket. This is the ONLY state file
+for the task: documents under the task folder carry no frontmatter — documents
+are content, main.yaml is state.
 
-```markdown
----
-id: <id>
+```yaml
+# identity — written once at intake, never edited after
+id: <id>                         # lowercased Jira key, adhoc-<slug>,
+                                 #   or <parent-id>-fix-<slug> for follow-ups
 source: jira | user
 priority: high | medium | low
-status: new
 workflow: full | trivial
 follows: <parent task id>        # follow-up tasks only; omit otherwise
 created: YYYY-MM-DD
----
 
+# pipeline state — mutable; updated per the reporting skill
+status: new | in-progress | blocked | verifying | done
+phase: none | "<k> of <N>"
+approved: pending | YYYY-MM-DD   # work/verification plan approval date
+verified: none | zero-cost | G1 | G2 | ...
+head: none | <sha of last phase-boundary commit>
+```
+
+`workflow` records the routing decision once, at intake: `full` runs every
+stage; `trivial` is the single-file/obvious/reversible escape hatch. Default
+`full` — downgrading to `trivial` is an explicit choice, visible and auditable
+in main.yaml, never an in-flight improvisation.
+
+Because all state transitions land in this one file, its git history IS the
+pipeline timeline: `git log --oneline -- docs/tasks/<id>/main.yaml`.
+
+## Ticket Format
+
+Write to `docs/tasks/<id>/ticket.md`. No frontmatter — identity and state live
+in main.yaml. Exactly this structure:
+
+```markdown
 # <id> — <title>
 
 ## Problem
@@ -66,11 +88,6 @@ language — the design stage owns the how.>
 <Jira link, related tasks, prior art; "none">
 ```
 
-`workflow` records the routing decision once, at intake: `full` runs every
-stage; `trivial` is the single-file/obvious/reversible escape hatch. Default
-`full` — downgrading to `trivial` is an explicit choice, visible and auditable
-in the frontmatter, never an in-flight improvisation.
-
 ## Follow-Up Tasks
 
 Work that continues a task whose pipeline already ran — a bug found after
@@ -82,16 +99,17 @@ already did research" is not a reason to skip research here.
 - **Id:** `<parent-id>-fix-<slug>` (e.g. `proj-1234-fix-build-errors`).
   The slug names the problem, not a counter — a second follow-up on the same
   parent gets its own descriptive slug.
-- **Frontmatter:** set `follows: <parent-id>` even though the id encodes it —
-  lineage is machine state, never parsed out of string prefixes, and it keeps
-  chains explicit when a follow-up's parent is itself a follow-up.
+- **State:** set `follows: <parent-id>` in the follow-up's main.yaml even
+  though the id encodes it — lineage is machine state, never parsed out of
+  string prefixes, and it keeps chains explicit when a follow-up's parent is
+  itself a follow-up.
 - **References:** the parent's `ticket.md`, `research.md`, and
   `final-report.md` are mandatory reference entries. Research inherits: the
   follow-up's researcher dispatch attaches the parent's map and scopes only
   the delta ("prior map attached; verify staleness and map only the failure
   area") — never a blind full re-run, never a blind reuse.
 - Everything else is a normal task: same folder shape under
-  `docs/tasks/<id>/`, same frontmatter lifecycle, same phase-commit markers
+  `docs/tasks/<id>/`, same main.yaml lifecycle, same phase-commit markers
   (`<id>: phase N — ...` — the suffixed id keeps rollback greps from
   cross-matching the parent's commits).
 

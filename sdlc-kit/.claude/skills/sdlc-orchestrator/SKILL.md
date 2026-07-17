@@ -13,27 +13,27 @@ conversation, defer to whatever else governs the session.
 
 ## On Invocation
 
-Before intake: check `docs/tasks/*/ticket.md` for tickets with status ≠ `done`
-(frontmatter `status`/`phase`/`verified`/`head` is the durable state), run the
-recon block in `git-recon.md` (this folder), summarize one line per task
-(include `follows:` lineage where present), and ask whether to resume or start
-fresh.
+Before intake: check `docs/tasks/*/main.yaml` for tasks with status ≠ `done`
+(main.yaml is the durable state — one file per task, documents carry no
+frontmatter), run the recon block in `git-recon.md` (this folder), summarize
+one line per task (include `follows:` lineage where present), and ask whether
+to resume or start fresh.
 
 **Disambiguating "it's implemented, but..."** When the human reports a problem
 against a task that already ran — a build error, a bug, wrong behavior, an
 extension — classify before acting; never begin ad-hoc investigation:
 
-1. Parent ticket status ≠ `done` (never passed its final gate) → this is the
-   existing task's verification loop. **Rehydrate before routing** — a fresh
-   session holds none of the context the plan was made with. Read, in one
-   batched turn: `ticket.md`, `work-plan.md` (Strategy, the phase under
-   review, any fix-phases), the relevant gate in `verification-plan.md`, and
-   `research.md`. The approved plan's Strategy remains binding across
-   sessions: a fix that departs from it is a plan change requiring human
-   approval, never a fresh design. Then handle the failure under Workflow
-   step 5 — all of it, including its experience routing, which a new session
-   has not run.
-2. Parent ticket `done`, or the report describes new/changed behavior rather
+1. Parent task's main.yaml status ≠ `done` (never passed its final gate) →
+   this is the existing task's verification loop. **Rehydrate before routing**
+   — a fresh session holds none of the context the plan was made with. Read,
+   in one batched turn: `main.yaml`, `ticket.md`, `work-plan.md` (Strategy,
+   the phase under review, any fix-phases), the relevant gate in
+   `verification-plan.md`, and `research.md`. The approved plan's Strategy
+   remains binding across sessions: a fix that departs from it is a plan
+   change requiring human approval, never a fresh design. Then handle the
+   failure under Workflow step 5 — all of it, including its experience
+   routing, which a new session has not run.
+2. Parent task `done`, or the report describes new/changed behavior rather
    than a failure of the planned behavior → open a follow-up task
    (`requirements` skill, Follow-Up Tasks section) and run the FULL workflow.
    No stage is skipped on the grounds that the parent "already did" it.
@@ -54,26 +54,27 @@ extension — classify before acting; never begin ad-hoc investigation:
 ## Workflow
 
 Tasks with `workflow: trivial` (single-file, obvious, reversible — recorded in
-ticket frontmatter at intake) skip this. Everything else:
+main.yaml at intake) skip this. Everything else:
 
 1. **Intake.** Jira key → fetch the ticket and read it at full fidelity
    (nothing summarizes it before you); downstream consumes your distilled
    `ticket.md`, never the raw payload. Use the `requirements` skill; ask until
-   every AC is binary-checkable; write `docs/tasks/<id>/ticket.md`. No open
-   questions past this point.
+   every AC is binary-checkable; write `docs/tasks/<id>/ticket.md` and
+   `docs/tasks/<id>/main.yaml` in the same turn. No open questions past this
+   point.
 2. **Research.** Dispatch `researcher` with Problem + Target; save the brief to
    `research.md`. Low confidence or gaps → one narrower second pass before
    planning. Follow-up tasks attach the parent's map and scope the delta.
 3. **Design (plan mode).** Search `docs/experiences/` (CLAUDE.md read
    protocol); cite slugs in Strategy, including overridden ones. Draft work +
-   verification plans per the `planning` skill. A work plan's `based-on` file
-   must exist on disk — no `research.md`, no plan mode; dispatch the
-   researcher first. Explicit human approval before any implementation.
-   Immediately on approval — before exiting plan mode's context or dispatching
-   anything — write both plans to disk: `docs/tasks/<id>/work-plan.md` and
-   `verification-plan.md`. The plan-mode buffer is ephemeral; the files are
-   the record of what was agreed and what awaits verification. Any later plan
-   change is edited into these files, not just discussed.
+   verification plans per the `planning` skill. `research.md` must exist on
+   disk — no `research.md`, no plan mode; dispatch the researcher first.
+   Explicit human approval before any implementation. Immediately on approval
+   — before exiting plan mode's context or dispatching anything — write both
+   plans to disk (`docs/tasks/<id>/work-plan.md`, `verification-plan.md`) and
+   set main.yaml `approved: <date>`. The plan-mode buffer is ephemeral; the
+   files are the record of what was agreed and what awaits verification. Any
+   later plan change is edited into these files, not just discussed.
 4. **Implement.** Dispatch each phase to its plan-named executor — `engineer`
    by default, a fitting specialist from the installed setup otherwise. Every
    dispatch carries: ticket, current phase only, exact file scope, done-when,
@@ -97,17 +98,17 @@ ticket frontmatter at intake) skip this. Everything else:
      dispatch, updated in the work plan first (fix-phase `<N>a`, `<N>b`, ...).
      Re-gate narrowly: only the failed checks.
 6. **Report.** Any turn that changed the repo ends with the inline table from
-   the `reporting` skill. At phase boundaries and gates, update ticket
-   progress frontmatter. The `verified` field advances only by quoting a
+   the `reporting` skill. At phase boundaries and gates, update main.yaml's
+   pipeline-state fields. The `verified` field advances only by quoting a
    reviewer verdict from a dispatch in this session — never on the
    orchestrator's own authority. "Compiles-unverified" is an honest pre-gate
    state.
 7. **Close.** On final-gate PASS: write `final-report.md` (Changes from git,
    not memory) and open the PR with it as the body — never merge, close, or
-   force-push without explicit human instruction; ticket `done`; sync Jira
-   status; invoke the `experiences` skill if a lesson earned an entry;
-   re-index the context graph if the navigator reported [STALE]/[MISSING]
-   during the task.
+   force-push without explicit human instruction; main.yaml `status: done`;
+   sync Jira status; invoke the `experiences` skill if a lesson earned an
+   entry; re-index the context graph if the navigator reported
+   [STALE]/[MISSING] during the task.
 
 ## Delegation Rules
 
@@ -125,14 +126,17 @@ ticket frontmatter at intake) skip this. Everything else:
 ```
 docs/tasks/<id>/          # id = lowercased ticket key, adhoc-<slug>,
 │                         #   or <parent-id>-fix-<slug> for follow-ups
-├── ticket.md             # Problem / Target / AC + progress frontmatter
+├── main.yaml             # THE state file: identity + pipeline state;
+│                         #   its git log is the task's state timeline
+├── ticket.md             # Problem / Target / AC — content only
 ├── research.md
 ├── work-plan.md
 ├── verification-plan.md
 └── final-report.md       # written once at close; PR body
 ```
 
-Turn reports are inline in chat; durable state = ticket frontmatter + git.
+Turn reports are inline in chat; durable state = main.yaml + git. Documents
+carry no frontmatter — a state field found anywhere else is a bug.
 
 ## Hard Rules
 
