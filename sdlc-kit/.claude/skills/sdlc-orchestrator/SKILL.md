@@ -94,9 +94,15 @@ main.yaml at intake) skip this. Everything else:
      requires reading source, dispatch `researcher` with the error rows as the
      topic — its Locations table is your evidence; main-thread source
      exploration is not.
-   - Route the failure rows plus your cause hypothesis into the engineer
-     dispatch, updated in the work plan first (fix-phase `<N>a`, `<N>b`, ...).
-     Re-gate narrowly: only the failed checks.
+   - Draft the fix as a fix-phase (`<N>a`, `<N>b`, ...) in work-plan.md:
+     cause hypothesis, exact file scope, done-when, and which failed checks
+     re-gate. STOP. Present the fix-phase to the human as a plan diff and
+     get explicit approval — a reviewer FAIL/PARTIAL is a plan change, and
+     the original approval does not cover work the plan did not contain.
+     No approval in this session, no dispatch: report the failure table,
+     the drafted fix-phase, and wait. Only after approval, dispatch the
+     engineer with the failure rows + approved fix-phase, and re-gate
+     narrowly: only the failed checks.
 6. **Report.** Any turn that changed the repo ends with the inline table from
    the `reporting` skill. At phase boundaries and gates, update main.yaml's
    pipeline-state fields. The `verified` field advances only by quoting a
@@ -150,3 +156,6 @@ carry no frontmatter — a state field found anywhere else is a bug.
   are mandatory; raw logs never enter any context.
 - Plans need human approval; deviations are reported before continuing, not
   after.
+- Gate failures never authorize autonomous fixing. An engineer dispatch for
+  a fix-phase that was not approved as a plan diff in this session is a
+  deviation, not initiative.
