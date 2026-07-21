@@ -29,7 +29,7 @@ context, and only for MSBuild-level failures SARIF cannot see.
    comma so MSBuild doesn't split the property value.)
 3. Extract — same Bash turn or the next:
    ```bash
-   python3 ~/.claude/skills/run-build/scripts/sarif_report.py --root . --max 30
+   python3 .claude/skills/run-build/scripts/sarif_report.py --root . --max 30
    ```
    The script (stdlib only) merges every `obj/msbuild.sarif`, dedupes,
    orders by compile sequence (log mtime) then line, prints the error table,

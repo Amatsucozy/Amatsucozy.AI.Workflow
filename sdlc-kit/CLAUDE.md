@@ -1,3 +1,40 @@
+# Script Resolution (used by any step that invokes a skill's script)
+
+Project-level `.claude` wins over user-level `~/.claude`; the resolved tier is
+always echoed so a wrong-path guess is never a silent empty result.
+
+**bash**
+
+```bash
+SKILL="<skill-name>"          # e.g. experiences, run-build
+SCRIPT="<script-name>.py"     # e.g. experience_lookup.py, sarif_report.py
+REL="skills/$SKILL/scripts/$SCRIPT"
+
+if [ -f "./.claude/$REL" ]; then PATH_="./.claude/$REL"; TIER="project"
+elif [ -f "$HOME/.claude/$REL" ]; then PATH_="$HOME/.claude/$REL"; TIER="user"
+else echo "NOT-INSTALLED: $REL (checked ./.claude/ and ~/.claude/)"; exit 1
+fi
+echo "resolved: $TIER"
+python3 "$PATH_" <args>
+```
+
+**pwsh**
+
+```powershell
+$Skill  = "<skill-name>"          # e.g. experiences, run-build
+$Script = "<script-name>.py"      # e.g. experience_lookup.py, sarif_report.py
+$Rel    = "skills/$Skill/scripts/$Script"
+
+if (Test-Path "./.claude/$Rel") { $ScriptPath = "./.claude/$Rel"; $Tier = "project" }
+elseif (Test-Path "$HOME/.claude/$Rel") { $ScriptPath = "$HOME/.claude/$Rel"; $Tier = "user" }
+else {
+    Write-Error "NOT-INSTALLED: $Rel (checked ./.claude/ and ~/.claude/)"
+    exit 1
+}
+Write-Host "resolved: $Tier"
+python3 $ScriptPath <args>
+```
+
 # Experience-First Task Routing (always applies)
 
 Durable lessons live in `docs/experiences/*.md`. Before ANY investigation,
@@ -6,7 +43,7 @@ routing — it is a required first step, not a suggestion:
 
 1. Run the tag inventory first — unconditionally, every task, before
    deriving anything:
-   `python3 ~/.claude/skills/experiences/scripts/experience_lookup.py inventory`
+   `python3 .claude/skills/experiences/scripts/experience_lookup.py inventory`
    Not gated on "if unsure" — self-assessed confidence is exactly what
    fails here; a tag you invented to fit the task sounds no less plausible
    to you than one actually grounded in the corpus, so that check never
@@ -21,7 +58,7 @@ routing — it is a required first step, not a suggestion:
 3. Find candidates and confirm their trigger in a single call — pass
    whichever of `--tag` / `--symptom` / `--keyword` fit, all combined in one
    invocation:
-   `python3 ~/.claude/skills/experiences/scripts/experience_lookup.py search --tag <tag> --symptom "<error fragment>" --keyword "<broad term>"`
+   `python3 .claude/skills/experiences/scripts/experience_lookup.py search --tag <tag> --symptom "<error fragment>" --keyword "<broad term>"`
    About to type `--tag` without having run step 1 in this task? Stop, run
    step 1, then come back — that shortcut is the exact failure this
    routing exists to prevent.
