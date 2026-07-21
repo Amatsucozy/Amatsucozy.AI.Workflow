@@ -193,6 +193,12 @@ def cmd_search(args) -> int:
 
 
 def main() -> int:
+    # Force UTF-8 stdout with graceful fallback instead of the platform
+    # default (e.g. cp1252/cp437 on Windows), which can silently drop or
+    # garble non-ASCII output on legacy console codepages.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".", help="repo root; docs/experiences/ is read relative to it")
     sub = ap.add_subparsers(dest="cmd", required=True)
