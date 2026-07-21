@@ -4,18 +4,30 @@ Durable lessons live in `docs/experiences/*.md`. Before ANY investigation,
 implementation, refactor, debugging, or technology decision, you MUST run this
 routing — it is a required first step, not a suggestion:
 
-1. Derive 2–4 search terms from the task: technology names, error fragments,
-   domain concepts. If unsure what vocabulary entries use, list the tag
-   inventory first:
-   `grep -h '^tags:' docs/experiences/*.md | tr -d '[]' | sed 's/^tags: *//' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | sort | uniq -c | sort -rn`
-2. Find candidates by semantic relevance (run what fits, batched):
-   `grep -l "tags:.*<tag>" docs/experiences/*.md`                    (by tag)
-   `grep -li "symptom:.*<error fragment>" docs/experiences/*.md`     (for errors)
-   `grep -li "<keyword>" docs/experiences/*.md | head -5`            (broad)
-3. Confirm fit — check ONLY the candidates' triggers:
-   `grep -H '^use-when:' <candidate files>`
-   An entry is a match only if its `use-when` describes the situation you are
-   in. Tag overlap alone is not a match; do not judge from filenames.
+1. Run the tag inventory first — unconditionally, every task, before
+   deriving anything:
+   `python3 ~/.claude/skills/experiences/scripts/experience_lookup.py inventory`
+   Not gated on "if unsure" — self-assessed confidence is exactly what
+   fails here; a tag you invented to fit the task sounds no less plausible
+   to you than one actually grounded in the corpus, so that check never
+   fires. Exit 2 (no entries yet) → skip straight to step 5, FRESH problem.
+2. Derive 2–4 search terms from the task, matched against the tag list you
+   just saw: technology names, error fragments, domain concepts. Prefer an
+   inventory tag over a same-meaning invented one — inventory shows
+   `dependency-injection`, not your first-instinct `di`; search on the
+   former. This rule is about `--tag` specifically: `--symptom` and
+   `--keyword` are free text and are not required to pre-exist in the
+   inventory.
+3. Find candidates and confirm their trigger in a single call — pass
+   whichever of `--tag` / `--symptom` / `--keyword` fit, all combined in one
+   invocation:
+   `python3 ~/.claude/skills/experiences/scripts/experience_lookup.py search --tag <tag> --symptom "<error fragment>" --keyword "<broad term>"`
+   About to type `--tag` without having run step 1 in this task? Stop, run
+   step 1, then come back — that shortcut is the exact failure this
+   routing exists to prevent.
+   The report's Use-When column is the fit check: an entry is a match only
+   if Use-When describes the situation you are in. A high match count or
+   tag/keyword overlap alone is not a match; do not judge from filenames.
 4. One or more confirmed → HISTORICAL problem: read the matching files (most
    specific first, others only if they bear on the same task) and apply their
    guidance BEFORE any new investigation or code changes.
