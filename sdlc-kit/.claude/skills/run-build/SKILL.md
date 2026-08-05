@@ -6,9 +6,11 @@ description: Compile a .NET solution/project and produce an error-only structure
 # Run Build
 
 Compile and report failures with surgical precision. `amtcz sarif build`
-owns the whole sequence — stale-log cleanup, `dotnet build -v q -nologo`
-with per-project SARIF output, console to a temp file (last 8 lines echoed,
-Time Elapsed included), and the deduped error table. Its exit code IS the
+owns the whole sequence — `dotnet build -v q -nologo` with per-project SARIF
+output, console to a temp file (last 8 lines echoed, Time Elapsed included),
+a `logs: N fresh, M carried` line, and the deduped error table. Carried logs
+are valid evidence: MSBuild skips the compiler for up-to-date projects, and
+a log whose compile was skipped reflects unchanged inputs. Its exit code IS the
 verdict; never re-derive it from the output.
 
 `amtcz` is the only path (CLAUDE.md → Tooling Resolution). If it is not on
@@ -29,7 +31,7 @@ on your own initiative.
    |---|---|---|
    | 0 | build succeeded, no compiler errors | report SUCCESS + elapsed + warning count |
    | 1 | compiler errors — table printed | report FAILED with the table |
-   | 2 | no SARIF logs produced | infrastructure problem; report the console tail line, no retries |
+   | 2 | zero SARIF logs anywhere (none fresh, none carried) | ErrorLog not applied — infrastructure problem; report the console tail line, no retries |
    | 3 | GAP: build failed but zero compiler diagnostics — MSBuild-level (restore/SDK/references) | single error row from the informative console-tail line; no flag-juggling retries |
    | 4 | dotnet not on PATH | environment problem; surface to the human |
 3. Re-inspection without rebuilding (e.g. a larger `--max` after
@@ -60,6 +62,10 @@ Truncated: <its line>
 - >30 distinct errors → truncated to 30 + total + isolate-the-project
   recommendation; use `sarif probe` with a larger `--max` only on explicit
   request.
+- `--rebuild` (deletes all logs + `--no-incremental`, full recompile) only
+  after branch switches or when carried logs are suspect (e.g. a project was
+  removed from the solution) — and only on explicit human request; it pays
+  the full build cost.
 - Never `cat` the console temp file or any msbuild.sarif — the echoed tail
   and the table are the only build output permitted into context.
 - Report facts only — no fix proposals; fixing is the engineer's job.

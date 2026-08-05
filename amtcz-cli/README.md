@@ -49,16 +49,20 @@ pipx avoids this entire class of problem (`pipx ensurepath`).
 ## Usage
 
 ```
-amtcz sarif build [target] [--root .] [--pattern G] [--max 30] [--warnings]
-    The run-build sequence in one command: delete stale obj/msbuild.sarif
-    logs (cross-platform walk, skips bin/), run
+amtcz sarif build [target] [--rebuild] [--root .] [--pattern G] [--max 30] [--warnings]
+    The run-build sequence in one command: run
       dotnet build [target] -v q -nologo -p:ErrorLog="obj/msbuild.sarif%2Cversion=2.1"
     with console redirected to <tmp>/amtcz-build-console.txt (last 8 lines
-    echoed, Time Elapsed included), then extract the deduped error table.
+    echoed, Time Elapsed included), report `logs: N fresh, M carried`, then
+    extract the deduped error table. Existing logs are NOT deleted: MSBuild
+    skips the compiler for up-to-date projects and the compiler is what
+    writes SARIF, so a carried log is valid evidence of an unchanged
+    compile. --rebuild deletes all logs AND passes --no-incremental (full
+    recompile, all logs fresh) — for branch switches / suspect stale logs.
     Exit — the verdict, no output-parsing needed:
       0 = build succeeded, no compiler errors
       1 = compiler errors (table printed, cascade verdict included)
-      2 = no SARIF logs produced (ErrorLog flags not applied)
+      2 = zero SARIF logs anywhere, fresh or carried (ErrorLog not applied)
       3 = GAP: build failed but SARIF shows zero compiler diagnostics —
           MSBuild-level failure (restore/SDK/project references); the
           informative line is in the echoed console tail
@@ -122,6 +126,14 @@ This CLI is the single source of truth; the per-skill scripts it replaced
 (`sarif_report.py`, `experience_lookup.py`) are deleted from the kit.
 
 ## Changelog
+
+- 0.3.1 — FIX: `sarif build` no longer deletes logs pre-build. The old
+  clean-then-build sequence returned a false "no SARIF logs found" whenever
+  MSBuild's incremental check skipped compilation (up-to-date tree =>
+  compiler never runs => no log written => the just-deleted logs were the
+  only evidence). Now: snapshot mtimes, report fresh vs carried, and treat
+  carried logs as valid. `--rebuild` restores clean semantics correctly by
+  also forcing `--no-incremental`.
 
 - 0.3.0 — `test run` / `test probe`: dotnet test via TRX with failure-only
   extraction (repo-frame locations, exception-type clusters). Skipped and

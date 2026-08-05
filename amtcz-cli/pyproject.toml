@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "amtcz"
-version = "0.3.0"
+version = "0.3.1"
 description = "AMaTsuCoZy SDLC kit CLI — SARIF build reports, test TRX reports and experience-memory lookup. Stdlib-only runtime."
 requires-python = ">=3.8"
 license = { text = "MIT" }

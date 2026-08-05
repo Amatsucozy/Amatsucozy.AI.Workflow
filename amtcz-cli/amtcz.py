@@ -57,7 +57,7 @@ from collections import Counter
 from shutil import which
 from urllib.parse import unquote, urlparse
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 
 def out(line="", err=False):
@@ -115,14 +115,20 @@ def load_diagnostics(path: str, root: str):
             }
 
 
+def find_sarif_files(root: str, pattern: str):
+    """All SARIF logs under root matching pattern (bin/ excluded), sorted by
+    mtime — compile sequence proxy: earlier project first."""
+    return sorted(
+        (p for p in glob.glob(os.path.join(root, pattern), recursive=True)
+         if os.sep + "bin" + os.sep not in p),
+        key=os.path.getmtime,
+    )
+
+
 def run_probe(root: str, pattern: str, max_rows: int, show_warnings: bool) -> int:
     """Extraction core, shared by `sarif probe` and `sarif build`.
     Exit meaning: 0 no errors, 1 errors, 2 no SARIF files found."""
-    files = sorted(
-        (p for p in glob.glob(os.path.join(root, pattern), recursive=True)
-         if os.sep + "bin" + os.sep not in p),
-        key=os.path.getmtime,  # compile sequence proxy: earlier project first
-    )
+    files = find_sarif_files(root, pattern)
     if not files:
         out("SARIF: no log files found - build did not run with "
             '-p:ErrorLog="obj/msbuild.sarif%2Cversion=2.1", or was cleaned.')
@@ -179,30 +185,40 @@ def cmd_sarif_probe(args) -> int:
     return run_probe(os.path.abspath(args.root), args.pattern, args.max, args.warnings)
 
 
-def clean_stale_sarif(root: str) -> int:
-    """Delete every msbuild.sarif under an obj/ path (skip bin/, .git,
-    node_modules). Cross-platform replacement for the old `find -delete`."""
+def clean_all_sarif(root: str, pattern: str) -> int:
+    """Delete every matching SARIF log. Used ONLY with --rebuild: deleting
+    logs without forcing recompile recreates the incremental-skip gap
+    (compile skipped -> no new log -> false 'no SARIF found')."""
     removed = 0
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames
-                       if d not in ("bin", ".git", "node_modules")]
-        if "msbuild.sarif" in filenames and "obj" in dirpath.split(os.sep):
-            try:
-                os.remove(os.path.join(dirpath, "msbuild.sarif"))
-                removed += 1
-            except OSError:
-                pass
+    for p in find_sarif_files(root, pattern):
+        try:
+            os.remove(p)
+            removed += 1
+        except OSError:
+            pass
     return removed
 
 
 def cmd_sarif_build(args) -> int:
     root = os.path.abspath(args.root)
-    clean_stale_sarif(root)
+
+    if args.rebuild:
+        clean_all_sarif(root, args.pattern)
+        before = {}
+    else:
+        # Incremental-safe: do NOT delete logs. MSBuild skips CSC for
+        # up-to-date projects and CSC is what writes SARIF — a log whose
+        # compile was skipped is still valid (inputs unchanged since it
+        # was written). Snapshot mtimes to report fresh vs carried.
+        before = {p: os.path.getmtime(p)
+                  for p in find_sarif_files(root, args.pattern)}
 
     console = os.path.join(tempfile.gettempdir(), "amtcz-build-console.txt")
     cmd = ["dotnet", "build"]
     if args.target:
         cmd.append(args.target)
+    if args.rebuild:
+        cmd.append("--no-incremental")
     cmd += ["-v", "q", "-nologo", BUILD_PROPERTY]
 
     try:
@@ -221,6 +237,16 @@ def cmd_sarif_build(args) -> int:
     except OSError:
         pass
     out(f"console: {console}")
+
+    after = find_sarif_files(root, args.pattern)
+    fresh = [p for p in after
+             if p not in before or os.path.getmtime(p) > before[p]]
+    carried = len(after) - len(fresh)
+    if after:
+        note = f"logs: {len(fresh)} fresh, {carried} carried"
+        if carried:
+            note += " (incremental - compile skipped for up-to-date projects)"
+        out(note)
     out()
 
     probe_rc = run_probe(root, args.pattern, args.max, args.warnings)
@@ -236,7 +262,9 @@ def cmd_sarif_build(args) -> int:
             "the informative line is in the console tail above.")
         return 3
     if probe_rc == 2:
-        return 2  # build succeeded but produced no SARIF - flags not applied
+        # build succeeded yet zero logs exist anywhere (none fresh, none
+        # carried) - the ErrorLog property genuinely was not applied.
+        return 2
     return 0
 
 
@@ -645,6 +673,10 @@ def build_parser() -> argparse.ArgumentParser:
                       "extract report (exit 0/1/2/3/4)")
     sp_build.add_argument("target", nargs="?", default=None,
                           help=".sln/.csproj to build; omit to let dotnet pick")
+    sp_build.add_argument("--rebuild", action="store_true",
+                          help="delete all SARIF logs and pass --no-incremental: "
+                               "full recompile, all logs fresh (expensive; for "
+                               "branch switches / suspect stale logs)")
     _add_sarif_common(sp_build)
     sp_build.set_defaults(func=cmd_sarif_build)
 
