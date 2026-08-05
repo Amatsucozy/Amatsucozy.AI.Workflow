@@ -37,6 +37,8 @@ the failure this section exists to prevent):
 |---|---|
 | `amtcz sarif build <target>` | `dotnet build <target> -v q -nologo > /tmp/build-console.txt 2>&1; echo "build-exit:$?"; tail -8 /tmp/build-console.txt; grep -E ": (error\|warning) [A-Z]+[0-9]+" /tmp/build-console.txt \| sort -u \| head -30` (console text — expect duplicates; gap rule = compare build-exit against grep hits by hand) |
 | `amtcz sarif probe` | re-read `/tmp/build-console.txt` via the same grep — no rebuild |
+| `amtcz test run <target>` | `dotnet test <target> --no-build -v q --logger "console;verbosity=minimal" > /tmp/test-console.txt 2>&1; echo "test-exit:$?"; grep -E "Failed|Passed!|error" /tmp/test-console.txt \| head -80` (console text — no file:line locations, no cluster analysis) |
+| `amtcz test probe` | re-read `/tmp/test-console.txt` via the same grep — no rerun |
 | `amtcz exp inventory` | `grep -h "^tags:" docs/experiences/*.md` (read the raw tag lines; no frequency table) |
 | `amtcz exp search` | `grep -il "<term>" docs/experiences/*.md` per term, then `grep -H "^use-when:\|^symptom:" <hits>` — confirm via Use-When exactly as in step 3 below |
 

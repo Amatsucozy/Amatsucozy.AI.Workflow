@@ -1,40 +1,68 @@
 ---
 name: run-test
-description: Run a .NET test suite or filtered scope and produce a failure-only structured report (test, file:line, message) without raw test output entering context. Use whenever tests must run — at verification gates (with --no-build after a successful build), in failing-test fix loops, or when the human asks to "run tests", "why are tests failing". Never for fixing; never for verdicts beyond pass/fail counts.
+description: Run a .NET test suite or filtered scope and produce a failure-only structured report (test, file:line, message) via `amtcz test run` — one command runs the stale-TRX cleanup, the quiet TRX-logged test run, and the extraction; raw test output never enters context. Use whenever tests must run — at verification gates (with --no-build after a successful build), in failing-test fix loops, or when the human asks to "run tests", "why are tests failing". Never for fixing; never for verdicts beyond pass/fail counts.
 ---
 
 # Run Test
 
-Run tests and report failures with surgical precision. Raw output never enters
-context — only the capped pipeline below, restructured into the table.
+Run tests and report failures with surgical precision. `amtcz test run` owns
+the whole sequence — stale-TRX cleanup, `dotnet test -v q --nologo` with the
+TRX logger, console to a temp file (last 8 lines echoed), and the
+failure-only table with repo-relative locations. Its exit code IS the
+verdict; never re-derive it from the output.
+
+`amtcz` is the only path (CLAUDE.md → Tooling Resolution). If it is not on
+PATH, the resolution gate fires BEFORE this skill runs. Never grep test
+console output on your own initiative.
 
 ## Procedure
 
 1. Run exactly the scope given (project, `--filter`, or full suite) — never
    widen or narrow it.
-2. Default `--no-build` when binaries are fresh (always true right after a
-   successful build step). Quiet and capped:
-   `dotnet test <target> --no-build -v q --logger "console;verbosity=minimal" 2>&1 | grep -E "Failed|Passed!|error" | head -80`
-3. For each failure, extract: test name; location = first stack frame inside
-   the repo (skip framework frames); message = assertion/exception first line,
-   one clause. Never include stacks.
+2. One command; default `--no-build` when binaries are fresh (always true
+   right after a successful `amtcz sarif build`):
+   ```bash
+   amtcz test run <target> --root . --no-build [--filter "<expr>"] --max 25
+   ```
+   Exit code contract:
+   | Exit | Meaning | Then |
+   |---|---|---|
+   | 0 | ran, zero failures (skips/inconclusive don't fail) | report PASS + counts |
+   | 1 | one or more failed/errored — table printed | report FAIL with the table |
+   | 2 | no/malformed TRX (host crash, dropped logger, results-dir mismatch) | infrastructure problem; report the console tail line, no retries |
+   | 3 | GAP: TRX present but 0 tests discovered (bad filter, wrong target, no test SDK) | single error row from the console tail; fix the invocation, don't loop |
+   | 4 | dotnet not on PATH | environment problem; surface to the human |
+3. Re-inspection without rerunning (larger `--max` after truncation):
+   ```bash
+   amtcz test probe --root . --max 60
+   ```
+   Never rerun a suite just to re-read results already on disk.
 
 ## Report Format
 
 ```
-Tests: <scope> — PASS | FAIL — <passed>/<total>, <failed> failed, <skipped> skipped — <elapsed>
+Tests: <scope> — PASS | FAIL — <passed>/<total>, <failed> failed, <other> skipped/inconclusive
 
-| # | Test | Location | Failure |
-|---|------|----------|---------|
+<the amtcz table verbatim (Test | Location | Failure)>
 
-Clusters: <"failures 2–6 all NullReference in Fixture.Setup" style one-liner, or none>
-Truncated: none | first N of M — re-run with --filter for the rest
+Clusters: <its line>
+Truncated: <its line>
 ```
 
 ## Rules
 
-- Locations repo-relative — they route into engineer dispatches.
-- >25 distinct failures → first 25 + total + filtered-rerun recommendation.
-- Infrastructure failures (no tests discovered, stale binaries, bad filter) →
-  single error row with the informative line; retry only if asked.
+- Locations are repo-relative exactly as emitted (first repo stack frame,
+  bin/obj frames skipped) — they route into engineer dispatches.
+  `[no repo frame]` rows are still real failures; the message is the lead.
+- >25 distinct failures → truncated to 25 + total; use `test probe` with a
+  larger `--max`, or a narrower `--filter` rerun, only on explicit request.
+- Never `cat` the console temp file or any .trx — the echoed tail and the
+  table are the only test output permitted into context.
 - Facts only — no fixes, no acceptability judgments beyond the counts.
+- Add `TestResults/` to the repo .gitignore if not already there — the TRX
+  results dir lives under the repo root.
+
+*Degraded mode (session-approved only, per CLAUDE.md):* the verbatim
+test+grep commands from CLAUDE.md's degraded table replace step 2; the
+report carries a `tooling: degraded` line, no location extraction, no
+cluster line.

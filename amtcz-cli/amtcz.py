@@ -48,13 +48,16 @@ import argparse
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from collections import Counter
+from shutil import which
 from urllib.parse import unquote, urlparse
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 
 def out(line="", err=False):
@@ -235,6 +238,216 @@ def cmd_sarif_build(args) -> int:
     if probe_rc == 2:
         return 2  # build succeeded but produced no SARIF - flags not applied
     return 0
+
+
+# ============================================================================
+# test — dotnet test via TRX, failure-only report
+# ============================================================================
+
+TRX_NS = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+TRX_FILENAME = "amtcz-results.trx"  # fixed name: stale-cleanup + probe rely on it
+STACK_FRAME_RE = re.compile(r"in (?P<file>.+):line (?P<line>\d+)\s*$")
+# TRX outcomes that are actual failures. NotExecuted (skipped) and
+# Inconclusive are NOT failures - they ride in the summary's "other" count
+# only; putting them in the table would flip a green suite to FAIL.
+FAILURE_OUTCOMES = {"Failed", "Error", "Timeout", "Aborted"}
+
+
+def _first_repo_frame(stack_trace: str, root: str):
+    """First stack frame whose file resolves under root and isn't bin/obj
+    generated output. Returns (rel_path, line) or None. Note: matches the
+    invariant-culture ".. in <file>:line <n>" stack format; localized
+    runtimes emit translated frames and fall through to [no repo frame]."""
+    if not stack_trace:
+        return None
+    for line in stack_trace.splitlines():
+        m = STACK_FRAME_RE.search(line.strip())
+        if not m:
+            continue
+        raw = m.group("file")
+        try:
+            abs_path = os.path.abspath(
+                raw if os.path.isabs(raw) else os.path.join(root, raw)
+            )
+        except ValueError:
+            continue
+        if (os.sep + "obj" + os.sep) in abs_path or (os.sep + "bin" + os.sep) in abs_path:
+            continue
+        try:
+            rel = os.path.relpath(abs_path, root)
+        except ValueError:
+            continue
+        if rel.startswith(".."):
+            continue  # outside repo - a dependency's own source, not ours
+        return rel.replace("\\", "/"), int(m.group("line"))
+    return None
+
+
+def _exception_type(message: str) -> str:
+    """First clause before ':' - groups clusters the way sarif groups by
+    CASCADE_CODES, but for exception types since TRX has no fixed
+    diagnostic-code vocabulary."""
+    if not message:
+        return "?"
+    head = message.strip().splitlines()[0]
+    return head.split(":", 1)[0].strip() or "?"
+
+
+def parse_trx_failures(path: str, root: str):
+    """Yields dicts for every FAILURE result (see FAILURE_OUTCOMES):
+    {name, class, outcome, message, location}. 'location' is (file, line)
+    or None if no repo-relative stack frame was found."""
+    try:
+        tree = ET.parse(path)
+    except (OSError, ET.ParseError) as e:
+        out(f"WARN: unreadable TRX {path}: {e}", err=True)
+        return
+    root_el = tree.getroot()
+
+    class_by_id = {}
+    for ut in root_el.findall(f".//{TRX_NS}TestDefinitions/{TRX_NS}UnitTest"):
+        tid = ut.get("id")
+        tm = ut.find(f"{TRX_NS}TestMethod")
+        class_by_id[tid] = tm.get("className", "") if tm is not None else ""
+
+    for r in root_el.findall(f".//{TRX_NS}Results/{TRX_NS}UnitTestResult"):
+        outcome = r.get("outcome", "")
+        if outcome not in FAILURE_OUTCOMES:
+            continue
+        msg_el = r.find(f"{TRX_NS}Output/{TRX_NS}ErrorInfo/{TRX_NS}Message")
+        st_el = r.find(f"{TRX_NS}Output/{TRX_NS}ErrorInfo/{TRX_NS}StackTrace")
+        message = " ".join((msg_el.text or "").split()) if msg_el is not None else ""
+        stack = (st_el.text or "") if st_el is not None else ""
+        yield {
+            "name": r.get("testName", "?"),
+            "class": class_by_id.get(r.get("testId"), ""),
+            "outcome": outcome,
+            "message": message,
+            "location": _first_repo_frame(stack, root),
+        }
+
+
+def read_trx_summary(path: str):
+    """Returns (total, passed, failed, other) from ResultSummary/Counters,
+    or None if unreadable/malformed."""
+    try:
+        tree = ET.parse(path)
+    except (OSError, ET.ParseError):
+        return None
+    counters = tree.getroot().find(f".//{TRX_NS}ResultSummary/{TRX_NS}Counters")
+    if counters is None:
+        return None
+    total = int(counters.get("total", 0))
+    passed = int(counters.get("passed", 0))
+    failed = int(counters.get("failed", 0))
+    other = total - passed - failed
+    return total, passed, failed, other
+
+
+def trx_report(trx_path: str, root: str, max_rows: int) -> int:
+    """Report core, shared by `test run` and `test probe`.
+    Exit meaning: 0 pass, 1 failures, 2 no/malformed TRX, 3 zero discovered."""
+    if not os.path.exists(trx_path):
+        out(f"TRX: no results file found at {trx_path} - test host crashed, "
+            "logger arg was dropped, or --results-directory mismatch.")
+        return 2
+
+    summary = read_trx_summary(trx_path)
+    if summary is None:
+        out(f"TRX: {trx_path} has no ResultSummary - malformed or partial log.")
+        return 2
+    total, passed, failed, other = summary
+
+    if total == 0:
+        out("TRX: 0 tests discovered - GAP (bad filter, wrong target, or "
+            "no test SDK reference). This never reaches per-test results.")
+        return 3
+
+    failures = list(parse_trx_failures(trx_path, root))
+    verdict = "PASS" if not failures else "FAIL"
+    out(f"Tests: {verdict} - {passed}/{total} passed, {failed} failed, "
+        f"{other} other (skipped/inconclusive) - source: {os.path.basename(trx_path)}")
+
+    if not failures:
+        return 0
+
+    shown = failures[:max_rows]
+    out()
+    out("| # | Test | Location | Failure |")
+    out("|---|------|----------|---------|")
+    for i, f in enumerate(shown, 1):
+        loc = f"{f['location'][0]}:{f['location'][1]}" if f["location"] else "[no repo frame]"
+        test = f"{f['class']}.{f['name']}" if f["class"] else f["name"]
+        out(f"| {i} | {test} | {loc} | {f['message'] or f['outcome']} |")
+
+    out()
+    if len(failures) > 1:
+        types = [_exception_type(f["message"]) for f in failures]
+        top_type, top_count = max(
+            ((t, types.count(t)) for t in set(types)), key=lambda kv: kv[1]
+        )
+        if top_count >= max(2, len(failures) // 2):
+            out(f"Clusters: {top_count}/{len(failures)} failures are {top_type}")
+        else:
+            out("Clusters: none - mostly independent failures")
+    else:
+        out("Clusters: none")
+
+    if len(failures) > max_rows:
+        out(f"Truncated: first {max_rows} of {len(failures)} - re-run with "
+            "a narrower --filter for the rest")
+    else:
+        out("Truncated: none")
+
+    return 1
+
+
+def cmd_test_run(args) -> int:
+    if which("dotnet") is None:
+        out("test: dotnet not found on PATH - cannot run tests")
+        return 4
+
+    root = os.path.abspath(args.root)
+    results_dir = os.path.join(root, args.results_dir)
+    os.makedirs(results_dir, exist_ok=True)
+    stale = os.path.join(results_dir, TRX_FILENAME)
+    if os.path.exists(stale):
+        os.remove(stale)
+
+    cmd = ["dotnet", "test"]
+    if args.target:
+        cmd.append(args.target)
+    if args.no_build:
+        cmd.append("--no-build")
+    if args.filter:
+        cmd += ["--filter", args.filter]
+    cmd += [
+        "-v", "q", "--nologo",
+        "--logger", f"trx;LogFileName={TRX_FILENAME}",
+        "--results-directory", results_dir,
+    ]
+
+    console = os.path.join(tempfile.gettempdir(), "amtcz-test-console.txt")
+    with open(console, "w", encoding="utf-8", errors="replace") as f:
+        proc = subprocess.run(cmd, cwd=root, stdout=f, stderr=subprocess.STDOUT)
+
+    out(f"test-exit:{proc.returncode}")
+    try:
+        with open(console, encoding="utf-8", errors="replace") as f:
+            for line in f.read().splitlines()[-8:]:
+                out(line)
+    except OSError:
+        pass
+    out(f"console: {console}")
+    out()
+
+    return trx_report(os.path.join(results_dir, TRX_FILENAME), root, args.max)
+
+
+def cmd_test_probe(args) -> int:
+    root = os.path.abspath(args.root)
+    trx_path = os.path.join(root, args.results_dir, TRX_FILENAME)
+    return trx_report(trx_path, root, args.max)
 
 
 # ============================================================================
@@ -440,6 +653,32 @@ def build_parser() -> argparse.ArgumentParser:
                       "no build (exit 0/1/2)")
     _add_sarif_common(sp_probe)
     sp_probe.set_defaults(func=cmd_sarif_probe)
+
+    # amtcz test {run,probe}
+    sp_test = sub.add_parser("test", help="dotnet test via TRX, failure-only report")
+    sub_test = sp_test.add_subparsers(dest="test_cmd", required=True)
+
+    sp_trun = sub_test.add_parser(
+        "run", help="clean stale TRX, dotnet test with TRX logger, "
+                    "extract failures (exit 0/1/2/3/4)")
+    sp_trun.add_argument("target", nargs="?", default=None,
+                         help=".sln/.csproj to test; omit to let dotnet pick")
+    sp_trun.add_argument("--root", default=".", help="repo root; paths reported relative to it")
+    sp_trun.add_argument("--results-dir", default="TestResults/trx",
+                         help="TRX output dir, relative to root")
+    sp_trun.add_argument("--no-build", action="store_true",
+                         help="skip build; use right after a successful amtcz sarif build")
+    sp_trun.add_argument("--filter", default=None, help="dotnet test --filter expression")
+    sp_trun.add_argument("--max", type=int, default=25, help="max failure rows in the table")
+    sp_trun.set_defaults(func=cmd_test_run)
+
+    sp_tprobe = sub_test.add_parser(
+        "probe", help="re-read existing TRX, no rerun (exit 0/1/2/3)")
+    sp_tprobe.add_argument("--root", default=".", help="repo root")
+    sp_tprobe.add_argument("--results-dir", default="TestResults/trx",
+                           help="TRX output dir, relative to root")
+    sp_tprobe.add_argument("--max", type=int, default=25, help="max failure rows in the table")
+    sp_tprobe.set_defaults(func=cmd_test_probe)
 
     # amtcz exp {inventory,search}
     sp_exp = sub.add_parser("exp", help="experience-routing lookup "
