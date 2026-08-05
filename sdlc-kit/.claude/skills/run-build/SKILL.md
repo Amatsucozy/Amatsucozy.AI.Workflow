@@ -1,47 +1,45 @@
 ---
 name: run-build
-description: Compile a .NET solution/project with per-project SARIF error logging and produce an error-only structured report (file, line, code, message) via the sarif_report.py extraction script — raw build logs never enter context. Use whenever a build must run — at verification gates, in compile-check fix loops, or when the human asks "build", "does it compile", "what's broken". Never at normal verbosity; never for fixing.
+description: Compile a .NET solution/project and produce an error-only structured report (file, line, code, message) via `amtcz sarif build` — one command runs the clean, the quiet SARIF-logged build, and the extraction; raw build logs never enter context. Use whenever a build must run — at verification gates, in compile-check fix loops, or when the human asks "build", "does it compile", "what's broken". Never at normal verbosity; never for fixing.
 ---
 
 # Run Build
 
-Compile and report failures with surgical precision. Diagnostics come from
-structured SARIF (`-p:ErrorLog`), not from grepping console text — exact
-file/line/code/message, no regex fragility, multi-target duplicates deduped by
-the script. Console output goes to a temp file; only a short tail enters
-context, and only for MSBuild-level failures SARIF cannot see.
+Compile and report failures with surgical precision. `amtcz sarif build`
+owns the whole sequence — stale-log cleanup, `dotnet build -v q -nologo`
+with per-project SARIF output, console to a temp file (last 8 lines echoed,
+Time Elapsed included), and the deduped error table. Its exit code IS the
+verdict; never re-derive it from the output.
+
+`amtcz` is the only path (CLAUDE.md → Tooling Resolution). If it is not on
+PATH, the resolution gate fires BEFORE this skill runs: stop, notify, wait
+for the human to install or approve degraded mode. Never grep console text
+on your own initiative.
 
 ## Procedure
 
-1. Target: use the named .sln/.csproj; else Glob `*.sln` at root (single hit →
-   use it; multiple → pick by task context and say which).
-2. Clean stale logs, build quiet with SARIF output, console to temp file —
-   one batched Bash call:
+1. Target: use the named .sln/.csproj; else Glob `*.sln` at root (single hit
+   → use it; multiple → pick by task context and say which).
+2. One command:
    ```bash
-   find . -path '*/obj/msbuild.sarif' -delete 2>/dev/null; \
-   dotnet build <target> -v q -nologo \
-     -p:ErrorLog="obj/msbuild.sarif%2Cversion=2.1" \
-     > /tmp/build-console.txt 2>&1; \
-   echo "build-exit:$?"; tail -8 /tmp/build-console.txt
+   amtcz sarif build <target> --root . --max 30
    ```
-   (Relative ErrorLog path resolves per project → each writes its own
-   `obj/msbuild.sarif`; obj/ is already gitignored. The `%2C` is the escaped
-   comma so MSBuild doesn't split the property value.)
-3. Extract — same Bash turn or the next:
+   Exit code contract:
+   | Exit | Meaning | Then |
+   |---|---|---|
+   | 0 | build succeeded, no compiler errors | report SUCCESS + elapsed + warning count |
+   | 1 | compiler errors — table printed | report FAILED with the table |
+   | 2 | no SARIF logs produced | infrastructure problem; report the console tail line, no retries |
+   | 3 | GAP: build failed but zero compiler diagnostics — MSBuild-level (restore/SDK/references) | single error row from the informative console-tail line; no flag-juggling retries |
+   | 4 | dotnet not on PATH | environment problem; surface to the human |
+3. Re-inspection without rebuilding (e.g. a larger `--max` after
+   truncation, or `--warnings` on request):
    ```bash
-   python3 .claude/skills/run-build/scripts/sarif_report.py --root . --max 30
+   amtcz sarif probe --root . --max 60
    ```
-   The script (stdlib only) merges every `obj/msbuild.sarif`, dedupes,
-   orders by compile sequence (log mtime) then line, prints the error table,
-   the verbatim first error, and a cascade assessment. Exit: 0 clean,
-   1 errors, 2 no logs found.
-4. **Gap rule.** `build-exit` ≠ 0 but the script reports zero errors (or
-   exit 2) → the failure is MSBuild-level (restore, SDK, bad project
-   reference) — ErrorLog captures compiler diagnostics only. Report a single
-   error row from the informative line in the console tail; no flag-juggling
-   retries.
-5. On success report elapsed (from the console tail's Time Elapsed line) plus
-   the script's warning count only — no warning list unless asked
+   Never rebuild just to re-read a report that is already on disk.
+4. On success report elapsed (Time Elapsed line is in the echoed console
+   tail) plus the warning count only — no warning list unless asked
    (`--warnings` prints it when it is).
 
 ## Report Format
@@ -49,18 +47,25 @@ context, and only for MSBuild-level failures SARIF cannot see.
 ```
 Build: <target> — SUCCESS | FAILED (<n> errors) — <elapsed>
 
-<the script's table verbatim>
+<the amtcz table verbatim>
 
-First error: <script's line — which project it broke; script's cascade verdict>
-Truncated: <script's line>
+First error: <its line — which project it broke; its cascade verdict>
+Truncated: <its line>
 ```
 
 ## Rules
 
-- Paths are repo-relative exactly as the script emits them — they route into
-  engineer dispatches.
-- >30 distinct errors → the script truncates to 30 + total + isolate-the-
-  project recommendation; pass a larger `--max` only on explicit request.
-- Never `cat` /tmp/build-console.txt or any msbuild.sarif — the tail and the
-  script's table are the only build output permitted into context.
+- Paths are repo-relative exactly as emitted — they route into engineer
+  dispatches.
+- >30 distinct errors → truncated to 30 + total + isolate-the-project
+  recommendation; use `sarif probe` with a larger `--max` only on explicit
+  request.
+- Never `cat` the console temp file or any msbuild.sarif — the echoed tail
+  and the table are the only build output permitted into context.
 - Report facts only — no fix proposals; fixing is the engineer's job.
+
+*Degraded mode (session-approved only, per CLAUDE.md):* the verbatim
+build+grep commands from CLAUDE.md's degraded table replace step 2; the
+report carries a `tooling: degraded` line, no dedupe, no cascade verdict,
+and the gap rule falls back to manually comparing build-exit against the
+grep hits.

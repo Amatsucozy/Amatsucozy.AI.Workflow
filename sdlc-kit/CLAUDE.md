@@ -1,39 +1,44 @@
-# Script Resolution (used by any step that invokes a skill's script)
+# Tooling Resolution (used by any step that invokes kit tooling)
 
-Project-level `.claude` wins over user-level `~/.claude`; the resolved tier is
-always echoed so a wrong-path guess is never a silent empty result.
+All scripted tooling ships as ONE artifact: the standalone `amtcz` CLI
+(gh/az-style), installed machine-level onto PATH via pipx or pip. There are
+no per-skill scripts; the CLI is the single source of truth, and the same
+binary serves Claude Code sessions, subagents, bare CI, and manual shells.
 
-**bash**
+**Probe once per session, before the first tooling invocation:**
 
 ```bash
-SKILL="<skill-name>"          # e.g. experiences, run-build
-SCRIPT="<script-name>.py"     # e.g. experience_lookup.py, sarif_report.py
-REL="skills/$SKILL/scripts/$SCRIPT"
-
-if [ -f "./.claude/$REL" ]; then PATH_="./.claude/$REL"; TIER="project"
-elif [ -f "$HOME/.claude/$REL" ]; then PATH_="$HOME/.claude/$REL"; TIER="user"
-else echo "NOT-INSTALLED: $REL (checked ./.claude/ and ~/.claude/)"; exit 1
-fi
-echo "resolved: $TIER"
-python3 "$PATH_" <args>
+command -v amtcz >/dev/null 2>&1 && amtcz --version
 ```
 
-**pwsh**
+**If present:** use `amtcz <subcommand>` for every invocation this session.
+The echoed version is the skew guard — if a documented flag is rejected, the
+installed CLI is older than the docs; surface that, don't work around it.
 
-```powershell
-$Skill  = "<skill-name>"          # e.g. experiences, run-build
-$Script = "<script-name>.py"      # e.g. experience_lookup.py, sarif_report.py
-$Rel    = "skills/$Skill/scripts/$Script"
+**If absent: STOP.** Do not improvise a substitute, do not silently degrade.
+Report to the human, verbatim options included:
 
-if (Test-Path "./.claude/$Rel") { $ScriptPath = "./.claude/$Rel"; $Tier = "project" }
-elseif (Test-Path "$HOME/.claude/$Rel") { $ScriptPath = "$HOME/.claude/$Rel"; $Tier = "user" }
-else {
-    Write-Error "NOT-INSTALLED: $Rel (checked ./.claude/ and ~/.claude/)"
-    exit 1
-}
-Write-Host "resolved: $Tier"
-python3 $ScriptPath <args>
-```
+> The `amtcz` CLI is not on PATH. Choose:
+> (a) install it — `pipx install <amtcz-cli path or git url>` (or
+>     `pip install --user`, `py -m pip install --user` on Windows) — and I
+>     wait; or
+> (b) approve DEGRADED MODE for this session: I use the documented verbatim
+>     commands below — lossy (no dedupe, no cascade verdict, no match
+>     scoring) but runnable.
+
+Then wait. Degraded mode requires explicit approval, is scoped to the
+current session only, and is noted in every turn report while active
+(`tooling: degraded`). No approval → no tooling-dependent step runs.
+
+**Degraded verbatim commands** (run exactly these — improvised variants are
+the failure this section exists to prevent):
+
+| Replaces | Degraded command |
+|---|---|
+| `amtcz sarif build <target>` | `dotnet build <target> -v q -nologo > /tmp/build-console.txt 2>&1; echo "build-exit:$?"; tail -8 /tmp/build-console.txt; grep -E ": (error\|warning) [A-Z]+[0-9]+" /tmp/build-console.txt \| sort -u \| head -30` (console text — expect duplicates; gap rule = compare build-exit against grep hits by hand) |
+| `amtcz sarif probe` | re-read `/tmp/build-console.txt` via the same grep — no rebuild |
+| `amtcz exp inventory` | `grep -h "^tags:" docs/experiences/*.md` (read the raw tag lines; no frequency table) |
+| `amtcz exp search` | `grep -il "<term>" docs/experiences/*.md` per term, then `grep -H "^use-when:\|^symptom:" <hits>` — confirm via Use-When exactly as in step 3 below |
 
 # Experience-First Task Routing (always applies)
 
@@ -43,7 +48,9 @@ routing — it is a required first step, not a suggestion:
 
 1. Run the tag inventory first — unconditionally, every task, before
    deriving anything:
-   `python3 .claude/skills/experiences/scripts/experience_lookup.py inventory`
+   `amtcz exp inventory`
+   (CLI absent → the Tooling Resolution gate above fires FIRST; this step
+   does not run until the human has chosen.)
    Not gated on "if unsure" — self-assessed confidence is exactly what
    fails here; a tag you invented to fit the task sounds no less plausible
    to you than one actually grounded in the corpus, so that check never
@@ -58,7 +65,7 @@ routing — it is a required first step, not a suggestion:
 3. Find candidates and confirm their trigger in a single call — pass
    whichever of `--tag` / `--symptom` / `--keyword` fit, all combined in one
    invocation:
-   `python3 .claude/skills/experiences/scripts/experience_lookup.py search --tag <tag> --symptom "<error fragment>" --keyword "<broad term>"`
+   `amtcz exp search --tag <tag> --symptom "<error fragment>" --keyword "<broad term>"`
    About to type `--tag` without having run step 1 in this task? Stop, run
    step 1, then come back — that shortcut is the exact failure this
    routing exists to prevent.
@@ -83,4 +90,7 @@ routing — it is a required first step, not a suggestion:
    spawning a subagent of any kind, attach the confirmed-relevant entries'
    Lesson and Applies When/Not When sections (with slugs) directly in the
    dispatch prompt. Attach only confirmed matches, never unconfirmed
-   candidates.
+   candidates. `amtcz` is on the machine PATH, so it resolves for subagent
+   Bash calls too; a subagent that finds it absent reports `blocked` — the
+   degraded-mode decision belongs to the human via the main thread, never
+   to a subagent.

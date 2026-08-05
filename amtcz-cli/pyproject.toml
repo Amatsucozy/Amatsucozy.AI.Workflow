@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amtcz"
+version = "0.2.0"
+description = "AMaTsuCoZy SDLC kit CLI — SARIF build reports and experience-memory lookup. Stdlib-only runtime."
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "Huy" }]
+keywords = ["sdlc", "dotnet", "sarif", "claude-code"]
+
+[project.scripts]
+amtcz = "amtcz:main"
+
+[tool.setuptools]
+py-modules = ["amtcz"]
