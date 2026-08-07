@@ -13,10 +13,10 @@ are valid evidence: MSBuild skips the compiler for up-to-date projects, and
 a log whose compile was skipped reflects unchanged inputs. Its exit code IS the
 verdict; never re-derive it from the output.
 
-`amtcz` is the only path (CLAUDE.md → Tooling Resolution). If it is not on
-PATH, the resolution gate fires BEFORE this skill runs: stop, notify, wait
-for the human to install or approve degraded mode. Never grep console text
-on your own initiative.
+`amtcz` is guaranteed installed and is the only path — no fallback branch.
+If a Bash call reports it missing, stop and tell the human directly; this
+skill has no degraded mode. Never grep console text on your own initiative.
+Full flag reference beyond what's below: the `amtcz-cli` skill.
 
 ## Procedure
 
@@ -69,9 +69,3 @@ Truncated: <its line>
 - Never `cat` the console temp file or any msbuild.sarif — the echoed tail
   and the table are the only build output permitted into context.
 - Report facts only — no fix proposals; fixing is the engineer's job.
-
-*Degraded mode (session-approved only, per CLAUDE.md):* the verbatim
-build+grep commands from CLAUDE.md's degraded table replace step 2; the
-report carries a `tooling: degraded` line, no dedupe, no cascade verdict,
-and the gap rule falls back to manually comparing build-exit against the
-grep hits.

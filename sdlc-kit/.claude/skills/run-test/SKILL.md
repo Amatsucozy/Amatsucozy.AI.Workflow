@@ -11,9 +11,10 @@ TRX logger, console to a temp file (last 8 lines echoed), and the
 failure-only table with repo-relative locations. Its exit code IS the
 verdict; never re-derive it from the output.
 
-`amtcz` is the only path (CLAUDE.md → Tooling Resolution). If it is not on
-PATH, the resolution gate fires BEFORE this skill runs. Never grep test
-console output on your own initiative.
+`amtcz` is guaranteed installed and is the only path — no fallback branch.
+If a Bash call reports it missing, stop and tell the human directly; this
+skill has no degraded mode. Never grep test console output on your own
+initiative. Full flag reference beyond what's below: the `amtcz-cli` skill.
 
 ## Procedure
 
@@ -61,8 +62,4 @@ Truncated: <its line>
 - Facts only — no fixes, no acceptability judgments beyond the counts.
 - Add `TestResults/` to the repo .gitignore if not already there — the TRX
   results dir lives under the repo root.
-
-*Degraded mode (session-approved only, per CLAUDE.md):* the verbatim
-test+grep commands from CLAUDE.md's degraded table replace step 2; the
-report carries a `tooling: degraded` line, no location extraction, no
-cluster line.
+  

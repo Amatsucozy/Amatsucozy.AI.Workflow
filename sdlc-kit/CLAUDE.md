@@ -59,3 +59,16 @@ before one does.
    Bash calls too; a subagent that finds it absent reports `blocked` — the
    degraded-mode decision belongs to the human via the main thread, never
    to a subagent.
+
+---
+
+## Reference
+
+`amtcz` is guaranteed installed — no fallback branch, no probe-and-STOP gate.
+The commands this file calls (`exp inventory`, `exp search`) are given above
+in full; `run-build`/`run-test` likewise inline the one command each calls.
+For anything beyond those — uncommon flags, `--rebuild`, `exp` search
+scoring, a rejected flag, or troubleshooting — invoke the `amtcz-cli` skill.
+Not inlined here to keep this always-on file cheap; the skill's own
+description covers when to reach for it, so step 7's skill scan surfaces it
+on its own for tasks this file doesn't anticipate.
