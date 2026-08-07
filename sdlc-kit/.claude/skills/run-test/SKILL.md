@@ -62,4 +62,3 @@ Truncated: <its line>
 - Facts only — no fixes, no acceptability judgments beyond the counts.
 - Add `TestResults/` to the repo .gitignore if not already there — the TRX
   results dir lives under the repo root.
-  
