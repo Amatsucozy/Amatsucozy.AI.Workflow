@@ -20,7 +20,6 @@ from AMTCZ.
 | `pr-reviewer` agent | Reviews someone else's PR; produces draft comments only |
 | `requirements` / `planning` / `reporting` skills | Ticket intake, work/verification plan drafting, and turn/close reporting standards |
 | `run-build` / `run-test` skills | Capped, structured-report-only build and test execution (raw logs never enter context) |
-| `amtcz-cli` skill | Full `amtcz` flag/exit-code reference beyond the single command each of `run-build`/`run-test`/CLAUDE.md's routing already inlines |
 | `experiences` skill | Durable lessons under `docs/experiences/`, read ambiently (see `CLAUDE.md`), written on close |
 | `source-indexer` / `source-navigator` skills | Build and query a two-level context graph (`.amtcz/context.md`) so agents navigate instead of grepping cold |
 | `session-eval` skill | Manual, on-request scoring of a past conversation |
@@ -30,7 +29,9 @@ All of it lives under [`sdlc-kit/`](sdlc-kit) as a `.claude/` directory tree
 you install into a target repository, plus reference docs
 ([`CLAUDE.md`](sdlc-kit/CLAUDE.md), [`TUNING.md`](sdlc-kit/TUNING.md),
 [`MIGRATION.md`](sdlc-kit/MIGRATION.md), [`SESSION.md`](sdlc-kit/SESSION.md))
-that explain the design and its open questions.
+that explain the design and its open questions. The full `amtcz` CLI command
+reference lives inline in `CLAUDE.md` (always-on) rather than as a separate
+skill — see `TUNING.md` for why.
 
 ## Install
 

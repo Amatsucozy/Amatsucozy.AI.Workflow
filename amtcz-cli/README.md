@@ -115,15 +115,19 @@ routing branches FRESH/HISTORICAL off `exp`'s. Piping into `head` is safe (Broke
 
 ## Consumers
 
-- `CLAUDE.md` → Tooling Resolution (session probe, STOP gate, degraded-mode
-  table) and Experience-First Task Routing steps 1/3.
+- `CLAUDE.md` → Reference (the full command/flag/exit-code manual, always-on)
+  and Experience-First Task Routing steps 1–4.
 - `.claude/skills/run-build/SKILL.md` (single `sarif build` call; gap rule
   keys off exit 3).
 - `.claude/skills/run-test/SKILL.md` (single `test run` call; discovery gap
   keys off exit 3).
 
 This CLI is the single source of truth; the per-skill scripts it replaced
-(`sarif_report.py`, `experience_lookup.py`) are deleted from the kit.
+(`sarif_report.py`, `experience_lookup.py`) are deleted from the kit. The
+former `amtcz-cli` skill (on-demand full manual) has been retired — its
+content is folded into CLAUDE.md's Reference section instead, because agents
+were unreliably reaching for the skill on edge-case flags. See TUNING.md
+("amtcz CLI manual placement") for the rationale and the reversal signal.
 
 ## Changelog
 

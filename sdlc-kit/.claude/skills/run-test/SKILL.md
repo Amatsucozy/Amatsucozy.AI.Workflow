@@ -14,7 +14,8 @@ verdict; never re-derive it from the output.
 `amtcz` is guaranteed installed and is the only path — no fallback branch.
 If a Bash call reports it missing, stop and tell the human directly; this
 skill has no degraded mode. Never grep test console output on your own
-initiative. Full flag reference beyond what's below: the `amtcz-cli` skill.
+initiative. Full flag reference beyond what's below: CLAUDE.md → Reference —
+`amtcz` CLI (inlined always-on).
 
 ## Procedure
 

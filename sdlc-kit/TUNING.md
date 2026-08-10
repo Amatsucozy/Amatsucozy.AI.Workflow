@@ -21,6 +21,7 @@ an experiences entry (domain: process).
 | Turn-report trigger | any turn that changed the repo | sdlc-orchestrator step 6 (inline table; loop files retired for token cost) | "no silent work" | resume quality degrades or tuning needs hard telemetry → resume file-based reports |
 | main.yaml update discipline | instruction-only (reporting skill; no hook) | skills/reporting, sdlc-orchestrator step 6 | hooks retired on no-observed-value; ~5–8 writes per task don't justify a per-turn reminder riding every cache read. <!-- CONFIRM: if no stale-at-resume across the first 5 tickets, promote this rationale to observed-holding and note the date --> | main.yaml stale at any resume in the first 5 tickets → add a conditional Stop hook (warn only when last `<id>: phase N` commit disagrees with main.yaml phase), not a blind reminder |
 | Experience write bar | >30 min generalizable failure | skills/experiences | noise control | layer grows fast with entries never retrieved (raise), or repeated re-learning (lower) |
+| amtcz CLI manual placement | inlined always-on in CLAUDE.md; `amtcz-cli` skill retired (deleted, not deprecated-in-place — single source of truth) | CLAUDE.md → Reference | reverses the prior skill-based placement on direct observed-failure evidence: agents were mis-using or guessing at `amtcz` flags/exit codes instead of reliably reaching for the on-demand skill. Same root cause already logged in the Dispatch routing enforcement row above — a skill's own description is a fragile trigger when the model needs to already recognize it's in the edge case the skill covers before it'll invoke it. CLAUDE.md grew by ~100 lines (the full manual) to buy unconditional visibility instead. | wrong-command incidents don't drop after this change (i.e. visibility wasn't the actual failure mode) → revert to a skill and fix the trigger some other way instead of paying always-on cost for nothing; OR the always-on token cost measurably degrades unrelated tasks → split back out, but keep just the exit-code tables inlined here since those seem to be what agents actually reach for cold |
 
 Reading the evidence: per-turn telemetry files were retired with loop reports —
 close-time stats are best-effort by design (reporting skill). The evidence
@@ -60,3 +61,7 @@ strike each line once resolved (update the row, note the date).
   the last phase commit? (Resolves the CONFIRM marker in the discipline row.)
 - **Orchestrator line count:** current `wc -l` vs ~150. (Resolves the NOTE in
   the length row.)
+- **amtcz manual inlining:** did wrong-command/wrong-flag incidents actually
+  drop after CLAUDE.md absorbed the full manual, relative to the skill-based
+  baseline? Check engineer/reviewer dispatch transcripts and researcher
+  "Not Searched"-style admissions for `amtcz` misuse, pre- vs post-change.
