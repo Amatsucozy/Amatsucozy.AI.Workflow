@@ -1,0 +1,13 @@
+# identity — written once at intake, never edited after
+id: adhoc-amtcz-mcp
+source: user
+priority: medium
+workflow: full
+created: 2026-08-24
+
+# pipeline state — mutable; updated per the reporting skill
+status: done
+phase: "4 of 4"
+approved: 2026-08-24
+verified: G2
+head: 88ac721
