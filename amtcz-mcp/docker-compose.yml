@@ -1,0 +1,8 @@
+services:
+  amtcz-mcp:
+    build: .
+    image: amtcz-mcp
+    stdin_open: true
+    tty: false
+    volumes:
+      - ${WORKSPACE:-..}:/workspace

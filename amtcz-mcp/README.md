@@ -30,6 +30,32 @@ attached (`-i`) and the target repo mounted at `/workspace` (the tools'
 docker run -i --rm -v "$(pwd):/workspace" amtcz-mcp
 ```
 
+## Using Docker Compose
+
+`docker-compose.yml` is a convenience for local development and manual
+testing — building and running the server without retyping the `docker`
+invocation above. It is not what an MCP client uses at call time (clients
+spawn the server directly per their `.mcp.json` entry, below); use it when
+you're iterating on `amtcz-mcp` itself or poking at it by hand.
+
+```
+docker compose build
+docker compose run --rm -T amtcz-mcp
+```
+
+`-T` disables pseudo-TTY allocation — required, since the server speaks raw
+newline-delimited JSON over stdio and a TTY would interfere with that
+framing (same reason plain `docker run` above uses `-i` without `-t`).
+
+By default the compose service mounts the repo root (one level up from
+`amtcz-mcp/`) at `/workspace`, so `docker compose run --rm -T amtcz-mcp`
+works out of the box against this kit's own repo. To point it at a different
+target repo, override `WORKSPACE`:
+
+```
+WORKSPACE=/path/to/other/repo docker compose run --rm -T amtcz-mcp
+```
+
 ## Registering in a consumer's MCP config
 
 Add an entry like this to the consumer's `.mcp.json` (or Claude Code MCP
