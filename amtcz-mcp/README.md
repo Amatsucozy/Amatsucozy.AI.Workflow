@@ -58,8 +58,19 @@ WORKSPACE=/path/to/other/repo docker compose run --rm -T amtcz-mcp
 
 ## Registering in a consumer's MCP config
 
-Add an entry like this to the consumer's `.mcp.json` (or Claude Code MCP
-settings), pointing `command`/`args` at the same `docker run` invocation:
+**Important:** the `$(pwd)` used in the plain shell command above only works
+when Docker is invoked *through a shell*. An MCP client spawns `docker`
+directly (no shell in between), so `$(pwd)` — or any other shell syntax —
+gets passed to Docker as a literal string, not expanded, and Docker will
+reject it (`invalid characters for a local volume name`). In a JSON config,
+the `-v` source must be either a path token your specific client substitutes
+for you, or a hardcoded absolute path — never `$(pwd)`.
+
+- **VS Code's `mcp.json`** (`{"servers": {...}, "type": "stdio", ...}`
+  schema) substitutes `${workspaceFolder}` for you — use it as shown below.
+- **Every other client** (Claude Desktop, Claude Code's `.mcp.json`, etc.)
+  performs no substitution at all — replace `${workspaceFolder}` with a
+  hardcoded absolute path to the target repo instead.
 
 ```json
 {
