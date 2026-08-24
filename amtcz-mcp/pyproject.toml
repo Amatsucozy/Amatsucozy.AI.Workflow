@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amtcz-mcp"
+version = "0.1.0"
+description = "AMaTsuCoZy SDLC kit MCP server — SARIF build, TRX test, and experience-memory tools."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Huy" }]
+keywords = ["sdlc", "dotnet", "sarif", "trx", "claude-code", "mcp"]
+dependencies = ["mcp>=1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+amtcz-mcp = "amtcz_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
