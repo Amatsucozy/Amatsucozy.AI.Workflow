@@ -129,6 +129,17 @@ def test_run_test_fail(tmp_path, fixtures_dir):
     assert len(result.report.failures) == 1
 
 
+def test_run_test_zero_discovered(tmp_path):
+    results_dir = "TestResults/trx"
+    results_path = os.path.join(str(tmp_path), results_dir, trx.TRX_FILENAME)
+
+    with patch("amtcz_mcp.trx.which", return_value="/usr/bin/dotnet"), \
+         patch("amtcz_mcp.trx.subprocess.run", side_effect=_subprocess_writer(ZERO_DISCOVERED_TRX, results_path)):
+        result = trx.run_test(str(tmp_path), None, results_dir, False, None, 25)
+
+    assert result.verdict == "zero_discovered"
+
+
 def test_run_test_no_trx(tmp_path):
     results_dir = "TestResults/trx"
 
