@@ -13,11 +13,18 @@ conversation, defer to whatever else governs the session.
 
 ## On Invocation
 
-Before intake: check `docs/tasks/*/main.yaml` for tasks with status ≠ `done`
-(main.yaml is the durable state — one file per task, documents carry no
-frontmatter), run the recon block in `git-recon.md` (this folder), summarize
-one line per task (include `follows:` lineage where present), and ask whether
-to resume or start fresh.
+Scan only on an explicit resume/continue signal — "resume", "continue",
+"pick up <id>", "where did we leave off", or a direct ask to check in-flight
+work. On that signal: check `docs/tasks/*/main.yaml` for tasks with status ≠
+`done` (main.yaml is the durable state — one file per task, documents carry
+no frontmatter), run the recon block in `git-recon.md` (this folder),
+summarize one line per task (include `follows:` lineage where present), and
+ask which to resume.
+
+No signal → skip the scan and go straight to intake. A ticket paste, a bug
+report, or "start a new task" already tells you what to do; running recon
+and asking resume-or-fresh on top of that is a redundant round-trip, not
+caution.
 
 **Disambiguating "it's implemented, but..."** When the human reports a problem
 against a task that already ran — a build error, a bug, wrong behavior, an
@@ -62,7 +69,23 @@ main.yaml at intake) skip this. Everything else:
    every AC is binary-checkable; write `docs/tasks/<id>/ticket.md` and
    `docs/tasks/<id>/main.yaml` in the same turn. No open questions past this
    point.
-2. **Research.** Dispatch `researcher` with Problem + Target; save the brief to
+2. **Research.** Before dispatching, set up the branch — research read against
+   the wrong branch or a stale default gives the researcher's map (and every
+   downstream plan built on it) a false impression, so this runs before
+   research, not just before implementation:
+   1. Run the git-recon.md recon block. A dirty tree or a current branch
+      that doesn't match this task is the human's state, not the task's —
+      surface it and pause rather than branching over it.
+   2. Update the local default branch to latest:
+      `git fetch origin && git checkout "$DEFAULT" && git pull origin "$DEFAULT"`
+      (`$DEFAULT` from the recon block's `git symbolic-ref` line).
+   3. Create and check out the task branch per the `git-commit-branching`
+      skill, from that freshly-updated default: `feature/<id>` for a story,
+      `bugfix/<id>` for a bug fix, the parent ticket's ID for a sub-task.
+      If recon shows the current branch already matches (a resumed task),
+      skip creation and just confirm it's checked out.
+
+   Then dispatch `researcher` with Problem + Target; save the brief to
    `research.md`. Low confidence or gaps → one narrower second pass before
    planning. Follow-up tasks attach the parent's map and scope the delta.
 3. **Design (plan mode).** Search `docs/experiences/` (CLAUDE.md read
@@ -75,8 +98,12 @@ main.yaml at intake) skip this. Everything else:
    set main.yaml `approved: <date>`. The plan-mode buffer is ephemeral; the
    files are the record of what was agreed and what awaits verification. Any
    later plan change is edited into these files, not just discussed.
-4. **Implement.** Dispatch each phase to its plan-named executor — `engineer`
-   by default, a fitting specialist from the installed setup otherwise. Every
+4. **Implement.** The task branch was already set up in step 2 — confirm it's
+   still what's checked out (`git branch --show-current`) rather than
+   redoing setup; a mismatch means something switched branches underneath
+   the task since research, which is a stop-and-surface, not a silent
+   re-branch. Dispatch each phase to its plan-named executor — `engineer` by
+   default, a fitting specialist from the installed setup otherwise. Every
    dispatch carries: ticket, current phase only, exact file scope, done-when,
    prior handoff notes, confirmed-relevant experience lessons (subagents
    don't search experiences), and the pipeline contracts (scope fence, no

@@ -32,8 +32,10 @@ forward. This file maps old to new and states what changed and why.
 4. **Silent drift** — Deviations reporting required at three layers (engineer
    output, reviewer scope-drift findings, orchestrator loop reports).
 5. **Startup amnesia** — the orchestrator skill's On Invocation protocol scans
-   `docs/tasks/*/main.yaml` and derives the change view from git before taking
-   work. (SessionStart/Stop hooks were tried and retired — no observed value.)
+   `docs/tasks/*/main.yaml` and derives the change view from git whenever the
+   human signals resume/continue, so in-flight work is never lost to session
+   boundaries — without forcing that scan on every fresh-task invocation.
+   (SessionStart/Stop hooks were tried and retired — no observed value.)
 6. **State scatter** — one state file per task (main.yaml); documents carry no
    frontmatter, so status/phase/approval cannot disagree across files, and the
    state file's git log is the task timeline.
@@ -53,10 +55,10 @@ forward. This file maps old to new and states what changed and why.
 4. Install `source-navigator` / `source-indexer` skills where subagents can see
    them (project `.claude/skills/` or `~/.claude/skills/`).
 5. In-flight AMTCZ tasks: finish them under the old system; start new tasks
-   here. The On Invocation scan covers new-style tasks via main.yaml; surface
-   old-style in-flight tasks manually (their state lives in ticket
-   frontmatter). Do not backfill main.yaml for tasks you intend to finish
-   under AMTCZ.
+   here. The On Invocation scan covers new-style tasks via main.yaml when you
+   signal resume/continue; surface old-style in-flight tasks manually (their
+   state lives in ticket frontmatter). Do not backfill main.yaml for tasks you
+   intend to finish under AMTCZ.
 6. Retire agent files for King/Scout/Steward/Knight/Chancellor/Sentinel once no
    in-flight task references them.
 

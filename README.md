@@ -53,8 +53,9 @@ already have agents/skills there.
 2. Invoke the `sdlc-orchestrator` skill (or say what you want done — the
    skill's description routes to it for ticket work, task start, or resuming
    in-flight work under `docs/tasks/`).
-3. The orchestrator scans `docs/tasks/*/main.yaml` for unfinished work, runs
-   git recon, and asks whether to resume or start fresh.
+3. On an explicit resume/continue signal, the orchestrator scans
+   `docs/tasks/*/main.yaml` for unfinished work, runs git recon, and asks
+   which to resume. Otherwise it skips straight to intake.
 4. Everything from there follows the workflow in
    [`sdlc-kit/.claude/skills/sdlc-orchestrator/SKILL.md`](sdlc-kit/.claude/skills/sdlc-orchestrator/SKILL.md):
    intake → research → plan (human-approved) → phase-by-phase implementation

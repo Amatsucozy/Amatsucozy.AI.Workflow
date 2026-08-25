@@ -39,10 +39,17 @@ echo "diff size: $(git diff --stat "$BASE"...HEAD | tail -1)"
 | Who else changed my scope files upstream? | `git fetch -q && git log --oneline HEAD..origin/main -- <scope paths> \| head -5` |
 | Stashes lying around | `git stash list \| head -3` |
 | Rollback target for phase N | `git log --format='%H' --grep '^<id>: phase N' -1` |
+| Update local default branch to latest (before creating a task branch) | `git fetch origin && git checkout "$DEFAULT" && git pull origin "$DEFAULT"` |
 
 ## Usage rules
 
-- Recon block: once at invocation, and after any resume — not every turn.
+- Recon block: once at invocation, after any resume, and once more before the
+  first researcher dispatch on a task (SKILL.md step 2) — that third run is
+  what catches a dirty tree or wrong branch before the task branch gets
+  created over it, and before research reads the wrong tree and misleads
+  the plan built on it. Not every turn otherwise. Implement (step 4) reuses
+  the branch step 2 set up — a quick `git branch --show-current` check is
+  enough there, not a full re-recon.
 - Turn reports pull "Changed this turn" from `git diff --stat | tail -3`, nothing more.
 - Never run recon inside subagents — they receive their scope in the dispatch;
   source-control awareness is orchestrator judgment.

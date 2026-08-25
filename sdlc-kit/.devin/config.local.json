@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(python3)",
+      "Exec(Select-Object)",
+      "Exec(git show)",
+      "Exec(Select-String)",
+      "Exec(head)",
+      "Exec(git status)",
+      "Exec(git log)",
+      "Exec(git diff)",
+      "Exec(experiences)",
+      "Exec(amtcz exp)",
+      "Exec(amtcz sarif)",
+      "Exec(Get-Content)"
+    ]
+  }
+}
