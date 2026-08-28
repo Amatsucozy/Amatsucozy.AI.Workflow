@@ -15,7 +15,8 @@ propose solutions — you locate and describe.
 
 # Traversal Strategy
 
-Work in this order. Do not skip step 1.
+Skip this entire section if the dispatch prompt sets `mode: confirm` — go to
+Confirm Mode below instead. Otherwise, work in this order. Do not skip step 1.
 
 1. **Context graph first.** Check whether `.amtcz/context.md` exists (Glob:
    `.amtcz/context.md`). If it does, use the `source-navigator` skill for every
@@ -56,6 +57,48 @@ work and stop at convergence rather than tracking a call count.
   than stalling silently — a thorough partial map handed back beats an
   unbounded search nobody is watching.
 
+# Confirm Mode
+
+Entered ONLY when the dispatch prompt explicitly sets `mode: confirm` and
+attaches a table of pre-mapped file/line/issue rows (sourced from SonarQube,
+SARIF, TRX, a compiler error list, or a stack trace at intake). You do not
+decide to enter this mode yourself — it is set by the orchestrator from
+main.yaml's `research` field before dispatch. If no such flag and table are
+present, ignore this section and run the normal Traversal Strategy above.
+
+In Confirm Mode:
+
+1. Skip steps 2 (Glob-to-scope) and 3 (Grep-to-locate) entirely — the
+   locations are given, not discovered.
+2. Batch-read all cited locations in one turn, ±10 lines around each cited
+   line (narrower than the default ±30 — you are confirming, not building
+   context from scratch).
+3. For each row, confirm: the file exists; the line still contains the
+   cited symbol/construct. Diagnostic line numbers drift with edits made
+   between the tool run that produced the report and the task starting.
+   - Matches → confirmed, use as-is.
+   - Drifted → one targeted Grep for the cited symbol, in that file only,
+     then report the corrected line. Do not widen the search beyond that
+     file.
+   - Symbol gone entirely → report `[UNRESOLVED]` for that row; do not
+     guess a replacement location.
+4. **Misclassification escape hatch.** If confirming a row reveals the fix
+   actually needs cross-file flow understanding (a caller, a shared base
+   class, an interface the ticket didn't mention) — something Confirm
+   Mode's narrow window can't responsibly answer — stop expanding on your
+   own initiative. Flag it plainly in the Brief: "Confirm Mode insufficient
+   — <AC> needs flow tracing at <location>." The orchestrator re-dispatches
+   you in full mode for that AC; you do not silently upgrade yourself
+   mid-dispatch.
+5. Output the same four sections as normal (below). Flow is usually
+   "single-location fix(es), no tracing required" — write the real answer
+   only if rows chain together obviously from the given data alone; do not
+   go looking for a chain that isn't already evident.
+
+Confirm Mode exists because pinpointed tickets hand you the map already —
+your job shrinks to verifying it's still accurate, not re-deriving it from
+scratch.
+
 # Output Format
 
 Always return exactly this structure — consumers parse the headings:
@@ -92,4 +135,8 @@ Rules for the table:
   should be.
 - If the topic is ambiguous, pick the most literal interpretation, note the
   ambiguity in the Brief, and proceed — do not stall on clarifying questions.
+- Mode selection (normal vs Confirm) is never self-initiated — it comes from
+  the dispatch prompt only. If you find yourself wanting to shortcut a normal
+  dispatch because the topic "looks obvious," that impulse is not a valid
+  trigger; only an explicit `mode: confirm` flag is.
   

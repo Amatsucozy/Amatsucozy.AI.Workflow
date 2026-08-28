@@ -67,8 +67,9 @@ main.yaml at intake) skip this. Everything else:
    (nothing summarizes it before you); downstream consumes your distilled
    `ticket.md`, never the raw payload. Use the `requirements` skill; ask until
    every AC is binary-checkable; write `docs/tasks/<id>/ticket.md` and
-   `docs/tasks/<id>/main.yaml` in the same turn. No open questions past this
-   point.
+   `docs/tasks/<id>/main.yaml` in the same turn — this includes classifying
+   the `research` field (requirements skill, Research Mode Classification).
+   No open questions past this point.
 2. **Research.** Before dispatching, set up the branch — research read against
    the wrong branch or a stale default gives the researcher's map (and every
    downstream plan built on it) a false impression, so this runs before
@@ -85,9 +86,21 @@ main.yaml at intake) skip this. Everything else:
       If recon shows the current branch already matches (a resumed task),
       skip creation and just confirm it's checked out.
 
-   Then dispatch `researcher` with Problem + Target; save the brief to
-   `research.md`. Low confidence or gaps → one narrower second pass before
-   planning. Follow-up tasks attach the parent's map and scope the delta.
+   Dispatch `researcher` per main.yaml's `research` field — set at intake by
+   the requirements skill, never re-derived or second-guessed here:
+   - `research: full` → dispatch with Problem + Target; normal traversal.
+   - `research: pinpointed` → dispatch in Confirm Mode: attach the ticket's
+     cited file/line/issue rows verbatim in the dispatch prompt and set
+     `mode: confirm`. The researcher still runs — pinpointed classification
+     narrows its traversal, it does not remove the subagent boundary; the
+     main thread does not read source itself to save a dispatch (Hard Rules,
+     below, still apply in full).
+
+   Either way, save the brief to `research.md`. Low confidence, real gaps, or
+   a Confirm Mode brief flagging a misclassification (an AC turned out to
+   need flow-tracing the pinpointed rows didn't cover) → one narrower or full
+   second pass before planning. Follow-up tasks attach the parent's map and
+   scope the delta.
 3. **Design (plan mode).** Search `docs/experiences/` (CLAUDE.md read
    protocol); cite slugs in Strategy, including overridden ones. Draft work +
    verification plans per the `planning` skill. `research.md` must exist on
@@ -175,8 +188,10 @@ carry no frontmatter — a state field found anywhere else is a bug.
 
 - No main-thread implementation beyond trivial edits.
 - No main-thread codebase exploration during an active `workflow: full` task.
-  Mapping files, members, and flows is the researcher's job; the main thread
-  reads task documents and dispatch outputs, not source trees.
+  Mapping files, members, and flows is the researcher's job — including when
+  `research: pinpointed` — the main thread reads task documents and dispatch
+  outputs, not source trees, regardless of how confident it is in the
+  ticket's cited locations.
 - Builds and tests run only through the `run-build`/`run-test` skills at
   reviewer gates. Main-thread use is permitted only on explicit human request
   in that turn — never to self-verify pipeline work. Their capped pipelines

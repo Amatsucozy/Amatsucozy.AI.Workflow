@@ -30,6 +30,38 @@ repo. Two or three sharp questions beat a form. If the human says "just use your
 judgment", record the judgment you chose in the ticket's Constraints so it is
 visible and reversible.
 
+## Research Mode Classification (`research` field)
+
+Decided once at intake, alongside `workflow` — mechanical, not a feel call. Default
+`full`. Set `research: pinpointed` only when ALL of these hold for EVERY AC:
+
+- The ticket cites a row in an attached or pasted machine-generated diagnostic
+  source — a SonarQube export, a SARIF table (`amtcz sarif probe`/`build` output),
+  a TRX failure table (`amtcz test probe`/`run` output), a compiler error list, or
+  a stack trace — that names an exact file path AND a line number or an
+  unambiguous symbol.
+- The source is tool output, not human recollection. "It's somewhere in
+  AuthController" does not qualify; a pasted SonarQube row with `file:
+  AuthController.cs, line: 142` does.
+- The AC is a local fix at the cited location, not a request to understand or
+  trace behavior across files — "why does X reach Y" always needs full research,
+  no matter how precisely X itself is located.
+
+One AC failing any of these downgrades the WHOLE ticket to `full` — no
+partial-pinpointed tickets, and no self-assessed exceptions either: this is a
+source-format check, not a confidence check, for the same reason the experience
+routing in CLAUDE.md is unconditional rather than "if unsure" — a classification
+that feels right from the inside is not a classification you can trust. Record the
+field and move on; do not ask the human to confirm it.
+
+`research: pinpointed` changes the shape of the researcher dispatch (see
+sdlc-orchestrator SKILL.md → Workflow step 2) — it does not skip the researcher,
+and it changes nothing else in the pipeline: plan/implement/verify still run in
+full.
+
+For `workflow: trivial`, this field is not evaluated (trivial bypasses research
+entirely) — record `full` as the harmless unused default.
+
 ## Task State File — `docs/tasks/<id>/main.yaml`
 
 Written at intake, in the same turn as the ticket. This is the ONLY state file
@@ -43,6 +75,7 @@ id: <id>                         # lowercased Jira key, adhoc-<slug>,
 source: jira | user
 priority: high | medium | low
 workflow: full | trivial
+research: full | pinpointed      # see Research Mode Classification above
 follows: <parent task id>        # follow-up tasks only; omit otherwise
 created: YYYY-MM-DD
 
@@ -88,6 +121,10 @@ language — the design stage owns the how.>
 <Jira link, related tasks, prior art; "none">
 ```
 
+When `research: pinpointed`, the diagnostic source's rows belong in References
+verbatim (or attached), not paraphrased — the researcher's Confirm Mode dispatch
+quotes them directly from here.
+
 ## Follow-Up Tasks
 
 Work that continues a task whose pipeline already ran — a bug found after
@@ -103,6 +140,10 @@ already did research" is not a reason to skip research here.
   though the id encodes it — lineage is machine state, never parsed out of
   string prefixes, and it keeps chains explicit when a follow-up's parent is
   itself a follow-up.
+- **Research classification is independent per task.** A follow-up whose
+  parent was `pinpointed` is not automatically pinpointed — classify fresh
+  from this task's own input (a fresh build-break report typically
+  re-qualifies; a vaguer human-reported regression typically doesn't).
 - **References:** the parent's `ticket.md`, `research.md`, and
   `final-report.md` are mandatory reference entries. Research inherits: the
   follow-up's researcher dispatch attaches the parent's map and scopes only
@@ -121,3 +162,6 @@ already did research" is not a reason to skip research here.
 - Condense Jira imports; never paste descriptions wholesale. The ticket is the
   distilled contract and is usually shorter than its source.
 - A ticket with open questions does not advance to research. Ask, or park it.
+- `research: pinpointed` requires machine-generated file/line citations for
+  every AC — a ticket that merely *looks* simple still gets `full`. Ease of
+  the fix and precision of the location are different questions.
