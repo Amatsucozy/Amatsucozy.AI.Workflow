@@ -54,8 +54,32 @@ clients) already set that to the project root for you.
 
 With `uvx`, no separate install step is needed at all — copy
 [`.mcp.json.example`](.mcp.json.example) to your target repo's `.mcp.json`
-(or merge the `amtcz` entry into an existing one) and replace the
-placeholder path with wherever this repo lives on your machine:
+(or merge the `amtcz` entry into an existing one). It installs straight
+from GitHub, no local clone required:
+
+```json
+{
+  "mcpServers": {
+    "amtcz": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@adhoc-amtcz-mcp#subdirectory=amtcz-mcp",
+        "amtcz-mcp"
+      ]
+    }
+  }
+}
+```
+
+**The `@adhoc-amtcz-mcp` is this repo's current feature-branch name** —
+`amtcz-mcp/` doesn't exist on `main` until [PR #4](https://github.com/Amatsucozy/Amatsucozy.AI.Workflow/pull/4)
+merges. Once it does, drop the `@adhoc-amtcz-mcp` segment entirely (uv then
+tracks the repo's default branch) or pin it to a release tag once one
+exists — don't leave it pointed at a branch that gets deleted post-merge.
+
+If you're iterating on `amtcz-mcp` itself and want changes picked up without
+a `git push` round-trip, point `--from` at a local path instead:
 
 ```json
 {

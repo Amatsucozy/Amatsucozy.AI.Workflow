@@ -4,7 +4,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "/path/to/Amatsucozy.AI.Workflow/amtcz-mcp",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@adhoc-amtcz-mcp#subdirectory=amtcz-mcp",
         "amtcz-mcp"
       ]
     }
