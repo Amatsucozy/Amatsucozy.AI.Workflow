@@ -128,3 +128,34 @@ all 6 acceptance criteria met.**
 - `amtcz-cli` remains fully installable and functionally unchanged — its
   actual retirement/removal is intentionally deferred to a future task, once
   `amtcz-mcp` is proven in real use.
+
+## Post-close addendum — Docker distribution removed
+
+After the task closed (still on this same unmerged branch/PR), the Docker
+packaging decision from intake was reversed: `amtcz-mcp/Dockerfile` and
+`amtcz-mcp/docker-compose.yml` were deleted, and `amtcz-mcp` now runs as a
+direct Python process (console script `amtcz-mcp`, or `python -m amtcz_mcp`
+via a new `__main__.py`) instead of a container.
+
+Why: registering the Docker-based server in a client's MCP config required a
+volume mount whose source path had to be supplied per-client (`$(pwd)` only
+expands through a shell; a directly-spawned `docker` process gets no shell
+and no substitution; VS Code's `${workspaceFolder}` doesn't generalize to
+other clients) — a real, repeatedly-confusing failure mode surfaced in
+practice while documenting registration. Running the server directly removes
+the indirection entirely: each tool's `root` parameter already defaults to
+`.`, which is simply the spawned process's own working directory — already
+correct with zero configuration once a client sets its cwd to the project
+root, which every mainstream MCP client already does. The .NET SDK
+requirement (`sarif_build`/`test_run` shell out to `dotnet`) doesn't go away,
+it just becomes an ordinary host prerequisite instead of something bundled
+into an image — the same requirement `amtcz-cli` always had.
+
+Net effect on this report's AC-3 ("ships a Dockerfile ... whose entrypoint
+runs the stdio MCP server"): **no longer met as literally worded** — there is
+no Dockerfile. The functional intent behind AC-3 (a documented, working way
+to install and run the server) is met by the Install/Registering sections of
+the current `amtcz-mcp/README.md` instead. Nothing else in this report's
+Changes/Verification sections is affected — Docker was never load-bearing
+for AC-1, AC-2, AC-4, AC-5, or AC-6, and the pytest suite already required no
+Docker to run.
