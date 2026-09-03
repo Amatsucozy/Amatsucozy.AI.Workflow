@@ -20,15 +20,30 @@ hidden inside a container).
 
 ## Install
 
+Using [uv](https://docs.astral.sh/uv/) (preferred):
+
 ```bash
-pipx install <path-or-git-url>/amtcz-mcp        # preferred: isolated, on PATH
+uv tool install <path-or-git-url>/amtcz-mcp    # isolated, on PATH
+```
+
+Or skip installing entirely and run it ad hoc — uv fetches/builds into a
+cached environment on first use and reuses it after:
+
+```bash
+uvx --from <path-or-git-url>/amtcz-mcp amtcz-mcp
+```
+
+Without uv, plain pip works too:
+
+```bash
+pipx install <path-or-git-url>/amtcz-mcp        # isolated, on PATH
 pip install --user <path-or-git-url>/amtcz-mcp  # alternative
 py -m pip install --user <path-or-git-url>/amtcz-mcp   # Windows launcher
 ```
 
-pip generates a native `amtcz-mcp` entry point. If it isn't resolving on
-PATH in whatever environment your MCP client spawns from, `python -m
-amtcz_mcp` runs the server directly, independent of PATH.
+Any of the above generates a native `amtcz-mcp` entry point. If it isn't
+resolving on PATH in whatever environment your MCP client spawns from,
+`python -m amtcz_mcp` runs the server directly, independent of PATH.
 
 ## Registering in a consumer's MCP config
 
@@ -36,6 +51,22 @@ The server is spawned as a direct process — no container, no volume mount,
 nothing to substitute. Every tool's `root` parameter defaults to `.`, which
 is simply the process's own working directory; Claude Code (and most other
 clients) already set that to the project root for you.
+
+With `uvx`, no separate install step is needed at all:
+
+```json
+{
+  "mcpServers": {
+    "amtcz": {
+      "command": "uvx",
+      "args": ["--from", "<path-or-git-url>/amtcz-mcp", "amtcz-mcp"]
+    }
+  }
+}
+```
+
+If you installed with `uv tool install` (or plain pip/pipx) instead,
+`amtcz-mcp` is already on PATH:
 
 ```json
 {
@@ -47,8 +78,7 @@ clients) already set that to the project root for you.
 }
 ```
 
-If `amtcz-mcp` isn't on PATH in the client's spawn environment, use the
-module form instead — same effect, doesn't depend on PATH:
+Fallback if neither resolves on PATH in the client's spawn environment:
 
 ```json
 {
@@ -77,10 +107,16 @@ meaning) is visible to the calling agent through MCP tool introspection.
 
 ## Local development
 
-To iterate on the server, install it editable from inside `amtcz-mcp/`:
+To iterate on the server, from inside `amtcz-mcp/`:
 
-```
-pip install -e ".[dev]"
+```bash
+uv sync --extra dev
 ```
 
-Run it directly with `amtcz-mcp`, or `python -m amtcz_mcp`.
+This creates `.venv/` and `uv.lock` (committed, for reproducible dev
+installs) and installs the package editable plus `pytest`. Run the server
+with `uv run amtcz-mcp` (or `uv run python -m amtcz_mcp`), and the test
+suite with `uv run pytest`.
+
+Without uv: `pip install -e ".[dev]"`, then run with `amtcz-mcp` /
+`python -m amtcz_mcp` / `pytest` as usual.
