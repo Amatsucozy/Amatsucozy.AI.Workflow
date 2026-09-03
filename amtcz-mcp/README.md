@@ -52,7 +52,10 @@ nothing to substitute. Every tool's `root` parameter defaults to `.`, which
 is simply the process's own working directory; Claude Code (and most other
 clients) already set that to the project root for you.
 
-With `uvx`, no separate install step is needed at all:
+With `uvx`, no separate install step is needed at all — copy
+[`.mcp.json.example`](.mcp.json.example) to your target repo's `.mcp.json`
+(or merge the `amtcz` entry into an existing one) and replace the
+placeholder path with wherever this repo lives on your machine:
 
 ```json
 {

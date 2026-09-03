@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "amtcz": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "/path/to/Amatsucozy.AI.Workflow/amtcz-mcp",
+        "amtcz-mcp"
+      ]
+    }
+  }
+}
