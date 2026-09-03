@@ -64,7 +64,7 @@ from GitHub, no local clone required:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@adhoc-amtcz-mcp#subdirectory=amtcz-mcp",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@main#subdirectory=amtcz-mcp",
         "amtcz-mcp"
       ]
     }
@@ -72,11 +72,13 @@ from GitHub, no local clone required:
 }
 ```
 
-**The `@adhoc-amtcz-mcp` is this repo's current feature-branch name** —
-`amtcz-mcp/` doesn't exist on `main` until [PR #4](https://github.com/Amatsucozy/Amatsucozy.AI.Workflow/pull/4)
-merges. Once it does, drop the `@adhoc-amtcz-mcp` segment entirely (uv then
-tracks the repo's default branch) or pin it to a release tag once one
-exists — don't leave it pointed at a branch that gets deleted post-merge.
+**This points at `main`, where `amtcz-mcp/` doesn't exist yet** — it only
+resolves once [PR #4](https://github.com/Amatsucozy/Amatsucozy.AI.Workflow/pull/4)
+merges (confirmed directly: right now this exact command fails with `has no
+subdirectory 'amtcz-mcp'`). Until then, use the local-path variant below, or
+point `--from` at `git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@adhoc-amtcz-mcp#subdirectory=amtcz-mcp`
+(this PR's branch) instead. Once a release tag exists, pinning to that is
+more stable than tracking `main`.
 
 If you're iterating on `amtcz-mcp` itself and want changes picked up without
 a `git push` round-trip, point `--from` at a local path instead:
