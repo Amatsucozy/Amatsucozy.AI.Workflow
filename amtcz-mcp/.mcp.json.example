@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "amtcz": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@main#subdirectory=amtcz-mcp",
+        "amtcz-mcp"
+      ]
+    }
+  }
+}

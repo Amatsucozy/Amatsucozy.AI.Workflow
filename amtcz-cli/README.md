@@ -1,5 +1,11 @@
 # amtcz
 
+**Status: deprecated.** Superseded by
+[`amtcz-mcp`](../amtcz-mcp/README.md), which exposes the same functionality
+as MCP tools. This CLI is kept installable but is no longer the kit's
+documented interface — `sdlc-kit/CLAUDE.md` and its skills now call
+`amtcz-mcp`'s tools directly.
+
 Standalone CLI for the AMaTsuCoZy SDLC kit — SARIF-logged .NET builds,
 build-report extraction, and experience-memory lookup. Stdlib-only runtime;
 setuptools at build time only.
