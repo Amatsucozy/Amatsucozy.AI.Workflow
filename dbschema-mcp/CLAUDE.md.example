@@ -1,0 +1,56 @@
+# Reference — dbschema-mcp tools
+
+Merge this section into the consuming repository's `CLAUDE.md`, alongside the
+`amtcz-mcp` reference block if you have one. Everything here is cross-tool
+judgment; per-tool parameters and verdict meanings are in the tool
+descriptions themselves and are not repeated.
+
+The 7 tools (`catalog_info`, `catalog_refresh`, `schema_search_tables`,
+`schema_search_columns`, `schema_describe_table`, `schema_related_tables`,
+`schema_list_tables`) are self-describing — once the `dbschema` server is
+registered, the agent sees each tool's name, parameters, and full description
+(including what every `verdict` value means) directly in its tool list. This
+reference exists only for judgment calls that live ACROSS tools, not inside
+any single tool's own description.
+
+**The server returns structure, never rows.** No tool executes a query against
+user tables. SQL authorship stays with the agent — which is why reading
+`hints` is not optional.
+
+## Quick Reference — by scenario
+
+**Orientation**
+
+| Scenario | Tool call |
+|---|---|
+| First database question of the session | call `catalog_info` — read `hints` before writing any SQL (quoting, default schema, `TOP` vs `LIMIT`, concat operator) |
+| A migration ran during this session | call `catalog_refresh` |
+| Results contradict what the database evidently has | call `catalog_refresh` once — if it still disagrees, the schema filter (`DBSCHEMA_SCHEMAS`) is the likelier cause than a stale snapshot |
+| Ordinary lookups, nothing changed | do **not** refresh — the snapshot is taken once per process and is valid for the whole session |
+
+**Finding things**
+
+| Scenario | Tool call |
+|---|---|
+| "What table holds X?" | call `schema_search_tables` with the domain word |
+| "What is the column for Y?" | call `schema_search_columns`; add `table=` once you know the table |
+| `verdict == "no_match"` on a search | try a different domain word once, then call `schema_list_tables` — do not keep re-phrasing the same guess |
+| Need to eyeball the whole namespace | call `schema_list_tables` (with `schema=`/`kind=` to narrow) — not as a first move on a large database |
+| `verdict == "ambiguous"` / `"table_ambiguous"` | re-call with one of the returned `candidates`, which are already schema-qualified |
+| `verdict == "not_found"` / `"table_not_found"` | the name is wrong, not the call — find the real name via search/list before retrying |
+
+**Writing the query**
+
+| Scenario | Tool call |
+|---|---|
+| About to write SQL against a table | call `schema_describe_table` — this is the authoritative column list; never write columns from search hits, which report only what matched |
+| Need to join two entities | call `schema_related_tables` and use its `join_on` predicates verbatim; `path` chains them for multi-hop |
+| `related` returned `no_relations` | the schema may declare no FK constraints at all — infer join columns by name from `schema_describe_table`, don't conclude the tables are unrelated |
+| Tempted to raise `depth` above 1 | only when a direct join genuinely doesn't reach the entity; depth 3+ on a normalised schema returns most of the database |
+
+**Failure**
+
+| Scenario | Tool call |
+|---|---|
+| `verdict == "catalog_unavailable"` | environment/config problem (`DBSCHEMA_URL` unset, driver missing, connection refused) — see `error`, surface it to the human. Every tool returns this until it's fixed; calling a different tool will not help |
+| Any tool needs a connection string | it doesn't — credentials are environment-only, by design. Never put one in a tool parameter |

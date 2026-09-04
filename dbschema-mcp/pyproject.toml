@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dbschema-mcp"
+version = "0.1.0"
+description = "Database structure retrieval MCP server (stdio). Returns schema; the agent writes the SQL."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Huy" }]
+keywords = ["database", "schema", "postgres", "sqlserver", "claude-code", "mcp"]
+dependencies = ["mcp>=1.0"]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.1"]
+mssql = ["pyodbc>=5.0"]
+all = ["psycopg[binary]>=3.1", "pyodbc>=5.0"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+dbschema-mcp = "dbschema_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "dbschema": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@main#subdirectory=dbschema-mcp",
+        "dbschema-mcp"
+      ],
+      "env": {
+        "DBSCHEMA_URL": "postgresql://user:pass@localhost/shop",
+        "DBSCHEMA_SCHEMAS": ""
+      }
+    }
+  }
+}
