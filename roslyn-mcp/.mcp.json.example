@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "roslyn": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@main#subdirectory=roslyn-mcp",
+        "roslyn-mcp"
+      ],
+      "env": {
+        "ROSLYN_LSP_CMD": "C:/Users/<you>/.dotnet/tools/roslyn-language-server.cmd"
+      }
+    }
+  }
+}

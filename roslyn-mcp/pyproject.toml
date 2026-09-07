@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "roslyn-mcp"
+version = "0.1.0"
+description = "MCP server exposing roslyn-language-server (C# LSP) as structured tools for any MCP-capable agent"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Huy" }]
+keywords = ["mcp", "roslyn", "csharp", "lsp", "claude-code"]
+dependencies = ["mcp>=1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+roslyn-mcp = "roslyn_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
