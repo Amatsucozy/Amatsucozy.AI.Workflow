@@ -57,9 +57,10 @@ before one does.
    Lesson and Applies When/Not When sections (with slugs) directly in the
    dispatch prompt. Attach only confirmed matches, never unconfirmed
    candidates. The tools resolve for subagent calls too as long as the
-   `amtcz-mcp` server is registered/reachable in that context; a subagent
-   that finds the tools unavailable reports `blocked` — the degraded-mode
-   decision belongs to the human via the main thread, never to a subagent.
+   relevant server (`amtcz`, `dbschema`, `roslyn`) is registered/reachable
+   in that context; a subagent that finds a tool it needs unavailable
+   reports `blocked` — the degraded-mode decision belongs to the human via
+   the main thread, never to a subagent.
 
 ---
 
@@ -110,3 +111,105 @@ every time.
 | Start of any task (routing step 2) | call `exp_inventory` |
 | Tags/symptom/keywords derived, need candidates (routing step 4) | call `exp_search` with `tag`/`symptom`/`keyword` |
 | `exp_inventory` returned `verdict == "no_entries"` | skip search entirely — FRESH problem, per routing step 2 |
+
+---
+
+## Reference — dbschema-mcp tools
+
+The 7 tools (`catalog_info`, `catalog_refresh`, `schema_search_tables`,
+`schema_search_columns`, `schema_describe_table`, `schema_related_tables`,
+`schema_list_tables`) are self-describing — once the `dbschema` server is
+registered, the agent sees each tool's name, parameters, and full description
+(including what every `verdict` value means) directly in its tool list. This
+reference exists only for judgment calls that live ACROSS tools, not inside
+any single tool's own description.
+
+**The server returns structure, never rows.** No tool executes a query against
+user tables. SQL authorship stays with the agent — which is why reading
+`hints` is not optional.
+
+### Quick Reference — by scenario
+
+**Orientation**
+
+| Scenario | Tool call |
+|---|---|
+| First database question of the session | call `catalog_info` — read `hints` before writing any SQL (quoting, default schema, `TOP` vs `LIMIT`, concat operator) |
+| A migration ran during this session | call `catalog_refresh` |
+| Results contradict what the database evidently has | call `catalog_refresh` once — if it still disagrees, the schema filter (`DBSCHEMA_SCHEMAS`) is the likelier cause than a stale snapshot |
+| Ordinary lookups, nothing changed | do **not** refresh — the snapshot is taken once per process and is valid for the whole session |
+
+**Finding things**
+
+| Scenario | Tool call |
+|---|---|
+| "What table holds X?" | call `schema_search_tables` with the domain word |
+| "What is the column for Y?" | call `schema_search_columns`; add `table=` once you know the table |
+| `verdict == "no_match"` on a search | try a different domain word once, then call `schema_list_tables` — do not keep re-phrasing the same guess |
+| Need to eyeball the whole namespace | call `schema_list_tables` (with `schema=`/`kind=` to narrow) — not as a first move on a large database |
+| `verdict == "ambiguous"` / `"table_ambiguous"` | re-call with one of the returned `candidates`, which are already schema-qualified |
+| `verdict == "not_found"` / `"table_not_found"` | the name is wrong, not the call — find the real name via search/list before retrying |
+
+**Writing the query**
+
+| Scenario | Tool call |
+|---|---|
+| About to write SQL against a table | call `schema_describe_table` — this is the authoritative column list; never write columns from search hits, which report only what matched |
+| Need to join two entities | call `schema_related_tables` and use its `join_on` predicates verbatim; `path` chains them for multi-hop |
+| `related` returned `no_relations` | the schema may declare no FK constraints at all — infer join columns by name from `schema_describe_table`, don't conclude the tables are unrelated |
+| Tempted to raise `depth` above 1 | only when a direct join genuinely doesn't reach the entity; depth 3+ on a normalised schema returns most of the database |
+
+**Failure**
+
+| Scenario | Tool call |
+|---|---|
+| `verdict == "catalog_unavailable"` | environment/config problem (`DBSCHEMA_URL` unset, driver missing, connection refused) — see `error`, surface it to the human. Every tool returns this until it's fixed; calling a different tool will not help |
+| Any tool needs a connection string | it doesn't — credentials are environment-only, by design. Never put one in a tool parameter |
+
+---
+
+## Reference — roslyn-mcp tools
+
+The 9 tools (`workspace_status`, `document_symbols`, `definition`,
+`implementations`, `references`, `hover`, `diagnostics`, `rename_preview`,
+`refresh_file`) are self-describing — once the `roslyn` server is registered,
+the agent sees each tool's name, parameters, and full description directly in
+its tool list. This reference exists only for judgment calls that live ACROSS
+tools, not inside any single tool's own description.
+
+**Semantic, not textual.** Every answer comes from the live Roslyn workspace
+(the same engine as VS Code's C# extension), not from grep — a `references`
+result is the true call graph, and `rename_preview` computes but never
+applies. All line/column values are 1-based. Every result carries `verdict`:
+`ok | workspace_loading | file_not_found | server_error | server_dead | timeout`.
+
+### Quick Reference — by scenario
+
+**Orientation**
+
+| Scenario | Tool call |
+|---|---|
+| First C# semantic question of the session | call `workspace_status(wait_seconds=120)` — pays the project-load cost once; the server stays warm afterwards |
+| Any tool returned `verdict == "workspace_loading"` | poll `workspace_status` until `ready: true`, then repeat the **same** call. An empty result under this verdict is not an answer |
+| `verdict == "server_dead"` | call `workspace_status` once — it restarts Roslyn. If it dies again, surface `log_dir` (`.roslyn-mcp/roslyn-stderr.log`) to the human; don't loop |
+| `verdict == "file_not_found"` | the path is wrong (relative paths resolve against the server root, not the shell cwd) — fix the path, don't retry as-is |
+| `verdict == "timeout"` | first request after start on a large solution — re-check `workspace_status`, then retry once |
+
+**Finding things**
+
+| Scenario | Tool call |
+|---|---|
+| Know the file, need a line/col to pass to another tool | call `document_symbols` first — never guess positions |
+| Need a resolved type or full signature | call `hover` — cheaper than `definition` plus a Read |
+| "Where is X defined?" | call `definition`; empty `locations` with `ok` means the position isn't a resolvable symbol, or it's metadata-only (BCL) |
+| "Who implements / overrides X?" (interface, abstract, virtual) | call `implementations`, not `references` — `references` returns usages, not implementers |
+| "Who calls / what uses X?" | call `references`; `total == 0` with `ok` is a real answer. `truncated: true` → re-call with a larger `max_results`, don't paginate by hand |
+| Location/behaviour/dependency question and `.amtcz/context.md` exists | `source-navigator` first — it answers "which project / which class" from the graph. Come to roslyn for exact positions, private members, and the precise reference set the graph can't answer |
+
+**Editing**
+
+| Scenario | Tool call |
+|---|---|
+| Just edited a file on disk, about to query it | call `refresh_file` first — Roslyn holds the document open and won't see the change otherwise (`diagnostics` refreshes implicitly) |
+| Quick per-file compile check after an edit | call `diagnostics` — no build. **Not a gate**: whole-solution verdicts still come from `sarif_build` |
+| Renaming a symbol | call `rename_preview`, review `by_file`, then apply the edits yourself — nothing on disk is touched by the tool |
