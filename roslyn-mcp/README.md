@@ -56,7 +56,7 @@ from GitHub, no local clone required:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@main#subdirectory=roslyn-mcp",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=roslyn-mcp",
         "roslyn-mcp"
       ],
       "env": {
@@ -67,9 +67,10 @@ from GitHub, no local clone required:
 }
 ```
 
-**This points at `main`, where `roslyn-mcp/` doesn't exist yet** — it only
-resolves once `roslyn-mcp/` is committed and pushed. Until then, point
-`--from` at a local path instead:
+Pinned to the `v1.0.0` release tag — more stable than tracking `main`, which
+moves as other packages in this repo change. If you're iterating on
+`roslyn-mcp` itself and want changes picked up without a `git push`
+round-trip, point `--from` at a local path instead:
 
 ```json
 {

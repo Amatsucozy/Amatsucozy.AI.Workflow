@@ -4,7 +4,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@main#subdirectory=dbschema-mcp",
+        "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=dbschema-mcp",
         "dbschema-mcp"
       ],
       "env": {
