@@ -148,13 +148,15 @@ def _run(fn, file: str, *, needs_ready: bool = True) -> dict:
             c.wait_ready(timeout=float(os.environ.get("ROSLYN_TOOL_READY_WAIT", "30")))
         verdict = "ok" if c.ready else "workspace_loading"
         result = fn(c, path)
-        result.setdefault("verdict", verdict)
-        result["solution"] = _rel_root(c.solution)
+        # verdict/solution/hint lead the dict so they survive clients that
+        # truncate long payloads (a 168-symbol list would otherwise bury them).
+        head: dict[str, Any] = {"verdict": result.pop("verdict", verdict),
+                                "solution": _rel_root(c.solution)}
         if verdict != "ok":
-            result["verdict"] = "workspace_loading"
-            result["hint"] = ("Roslyn is still loading projects; results above may be empty "
-                              "or partial. Poll workspace_status until ready=true.")
-        return result
+            head["verdict"] = "workspace_loading"
+            head["hint"] = ("Roslyn is still loading projects; results below may be empty "
+                            "or partial. Poll workspace_status until ready=true.")
+        return {**head, **result}
     except FileNotFoundError as e:
         return {"verdict": "file_not_found", "error": str(e)}
     except LspError as e:

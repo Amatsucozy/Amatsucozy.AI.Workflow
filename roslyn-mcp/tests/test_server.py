@@ -121,6 +121,18 @@ def test_every_tool_returns_plain_dict_with_verdict(root):
         assert isinstance(r, dict) and not hasattr(r, "__dataclass_fields__")
         assert r["verdict"] == "ok", r
         assert r["solution"] == "A.sln"
+        # verdict must be the FIRST key: clients that truncate long payloads
+        # (hundreds of symbols/references) would otherwise never see it.
+        assert list(r)[:2] == ["verdict", "solution"], list(r)
+
+
+def test_loading_hint_precedes_payload(root):
+    _touch(root / "A.sln")
+    _touch(root / "src" / "X.cs", "class X {}")
+    c = server._pool.get(str(root / "A.sln"))
+    c.ready = False
+    r = server.document_symbols("src/X.cs")
+    assert list(r)[:3] == ["verdict", "solution", "hint"] and r["verdict"] == "workspace_loading"
 
 
 def test_missing_file_is_a_verdict_not_an_exception(root):
