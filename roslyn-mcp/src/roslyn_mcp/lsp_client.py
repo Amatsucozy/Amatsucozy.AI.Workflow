@@ -1,13 +1,21 @@
 """Minimal LSP client for roslyn-language-server over stdio.
 
 Design notes
-- One long-lived Roslyn process per MCP server process. Spawned lazily on
-  first use, kept warm so repeated tool calls don't pay the project-load cost.
+- One long-lived Roslyn process per *solution* (see workspaces.ClientPool).
+  Spawned lazily on first use, kept warm so repeated tool calls don't pay
+  the project-load cost.
+- When a solution path is known the server is launched WITHOUT
+  --autoLoadProjects and told which solution to load with the
+  `solution/open` notification right after `initialized` — the same flow
+  VS Code's C# extension uses. Verified present in roslyn-language-server
+  5.12.0-1.26426.8 (Microsoft.CodeAnalysis.LanguageServer.dll exposes
+  `solution/open` and `project/open`). With no solution we fall back to
+  --autoLoadProjects, which preserves the single-repo behaviour.
 - A reader thread owns Roslyn's stdout. Responses are matched by id;
   notifications and server->client requests are dispatched by method.
-- Roslyn sends `workspace/projectInitializationComplete` once
-  --autoLoadProjects finishes. Semantic queries before that return empty
-  results that look like "no hits" — so we gate on it (see wait_ready()).
+- Roslyn sends `workspace/projectInitializationComplete` once project load
+  finishes. Semantic queries before that return empty results that look
+  like "no hits" — so we gate on it (see wait_ready()).
 - Nothing here ever writes to *our own* stdout: that pipe belongs to MCP.
   Roslyn's stderr goes to a log file, never to our stdio.
 """
@@ -28,6 +36,8 @@ from urllib.parse import unquote, urlparse
 from urllib.request import pathname2url
 
 PROJECT_INIT_COMPLETE = "workspace/projectInitializationComplete"
+SOLUTION_OPEN = "solution/open"
+LOG_DIR_NAME = ".roslyn-mcp"
 DEFAULT_CMD = os.environ.get("ROSLYN_LSP_CMD", "roslyn-language-server")
 DEFAULT_READY_TIMEOUT = float(os.environ.get("ROSLYN_READY_TIMEOUT", "180"))
 DEFAULT_REQUEST_TIMEOUT = float(os.environ.get("ROSLYN_REQUEST_TIMEOUT", "60"))
@@ -59,20 +69,34 @@ def uri_to_path(uri: str) -> str:
     return str(Path(p))
 
 
+def default_log_dir(root: str, solution: Optional[str]) -> str:
+    """`<root>/.roslyn-mcp/` for the auto-load client, `<root>/.roslyn-mcp/<sln-stem>/`
+    for an explicit solution, so concurrent workspaces never share a log."""
+    base = os.path.join(root, LOG_DIR_NAME)
+    return os.path.join(base, Path(solution).stem) if solution else base
+
+
 # ------------------------------------------------------------------- client
 
 class RoslynClient:
     def __init__(
         self,
         root: str,
+        solution: Optional[str] = None,
         cmd: str = DEFAULT_CMD,
         extra_args: Optional[list[str]] = None,
         log_dir: Optional[str] = None,
     ):
+        """`root` is the server root every relative path is reported against.
+        `solution` (optional, absolute or root-relative) is the .sln/.slnx this
+        process loads; None means auto-load from `root`."""
         self.root = str(Path(root).resolve())
+        self.solution = str((Path(self.root) / solution).resolve()) if solution else None
+        # The LSP workspace folder: the solution's directory when known, else the root.
+        self.workspace_dir = os.path.dirname(self.solution) if self.solution else self.root
         self.cmd = cmd
         self.extra_args = extra_args or []
-        self.log_dir = log_dir or os.path.join(self.root, ".roslyn-mcp")
+        self.log_dir = log_dir or default_log_dir(self.root, self.solution)
         self._proc: Optional[subprocess.Popen] = None
         self._ids = itertools.count(1)
         self._pending: dict[int, tuple[threading.Event, dict]] = {}
@@ -90,14 +114,24 @@ class RoslynClient:
             "client/unregisterCapability": lambda p: None,
             "window/workDoneProgress/create": lambda p: None,
             "workspace/configuration": lambda p: [None] * len(p.get("items", [])),
-            "workspace/workspaceFolders": lambda p: [
-                {"uri": path_to_uri(self.root), "name": Path(self.root).name}
-            ],
+            "workspace/workspaceFolders": lambda p: [self._workspace_folder()],
             "window/showMessageRequest": lambda p: None,
             "workspace/applyEdit": lambda p: {"applied": False},
         }
 
     # ------------------------------------------------------------ lifecycle
+    def _workspace_folder(self) -> dict:
+        return {"uri": path_to_uri(self.workspace_dir), "name": Path(self.workspace_dir).name}
+
+    def launch_args(self, exe: str) -> list[str]:
+        """Command line for the Roslyn process. `--autoLoadProjects` only when
+        no solution is known — otherwise `solution/open` picks the solution."""
+        args = [exe, "--stdio"]
+        if self.solution is None:
+            args.append("--autoLoadProjects")
+        args += ["--logLevel", "Warning", "--extensionLogDirectory", self.log_dir, *self.extra_args]
+        return args
+
     @property
     def alive(self) -> bool:
         return self._proc is not None and self._proc.poll() is None and not self._dead.is_set()
@@ -121,8 +155,7 @@ class RoslynClient:
             )
         os.makedirs(self.log_dir, exist_ok=True)
         stderr = open(os.path.join(self.log_dir, "roslyn-stderr.log"), "ab")
-        args = [exe, "--stdio", "--autoLoadProjects", "--logLevel", "Warning",
-                "--extensionLogDirectory", self.log_dir, *self.extra_args]
+        args = self.launch_args(exe)
         # On Windows, a .cmd wrapper must be launched via the shell.
         use_shell = sys.platform == "win32" and exe.lower().endswith((".cmd", ".bat"))
         self._proc = subprocess.Popen(
@@ -139,8 +172,8 @@ class RoslynClient:
     def _initialize(self) -> None:
         params = {
             "processId": os.getpid(),
-            "rootUri": path_to_uri(self.root),
-            "workspaceFolders": [{"uri": path_to_uri(self.root), "name": Path(self.root).name}],
+            "rootUri": path_to_uri(self.workspace_dir),
+            "workspaceFolders": [self._workspace_folder()],
             "clientInfo": {"name": "roslyn-mcp", "version": "0.1.0"},
             "capabilities": {
                 "workspace": {
@@ -167,6 +200,10 @@ class RoslynClient:
         result = self.request("initialize", params, timeout=DEFAULT_READY_TIMEOUT)
         self.server_capabilities = result.get("capabilities", {})
         self.notify("initialized", {})
+        if self.solution is not None:
+            # Explicit open: Roslyn loads exactly this solution and reports
+            # PROJECT_INIT_COMPLETE when done, same as with --autoLoadProjects.
+            self.notify(SOLUTION_OPEN, {"solution": path_to_uri(self.solution)})
 
     def wait_ready(self, timeout: float = DEFAULT_READY_TIMEOUT) -> bool:
         """Block until Roslyn reports project load complete (or timeout)."""

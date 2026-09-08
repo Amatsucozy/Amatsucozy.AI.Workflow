@@ -121,23 +121,50 @@ Fallback if neither resolves on PATH in the client's spawn environment:
 | env var | default | purpose |
 |---|---|---|
 | `ROSLYN_LSP_CMD` | `roslyn-language-server` (via PATH) | full path to the `.cmd`/binary if PATH resolution fails in your client |
-| `ROSLYN_MCP_ROOT` | cwd | solution/workspace root |
+| `ROSLYN_MCP_ROOT` | cwd | workspace root; may contain one repo or several (see "Multiple solutions") |
+| `ROSLYN_MCP_SOLUTION` | unset | pin one `.sln`/`.slnx` (absolute or root-relative); skips discovery entirely |
+| `ROSLYN_MCP_MAX_WORKSPACES` | 2 | how many Roslyn processes (one per solution) stay warm; least recently used is shut down beyond that |
 | `ROSLYN_READY_TIMEOUT` | 180 | max seconds `workspace_status(wait_seconds=…)` will block |
 | `ROSLYN_TOOL_READY_WAIT` | 30 | seconds any semantic tool waits for project load before answering with `workspace_loading` |
 
-Logs (Roslyn stderr + extension logs) land in `<root>/.roslyn-mcp/` — add it
+Logs (Roslyn stderr + extension logs) land in `<root>/.roslyn-mcp/<sln-stem>/`
+(plain `<root>/.roslyn-mcp/` for the no-solution fallback) — add `.roslyn-mcp/`
 to `.gitignore`.
+
+## Multiple solutions (multi-repo roots)
+
+The root may be a folder holding several repositories. Every semantic tool
+maps its `file` to a solution on its own: it walks up from the file's
+directory towards the root and picks the nearest directory containing
+exactly one `.sln`/`.slnx`. One Roslyn process is kept per solution, so
+`document_symbols("repo-b/src/X.cs")` just works — no prior
+`workspace_status` call, no knowledge of which solution owns the file.
+
+When the walk finds a directory with several solution files, or none at all
+up to a root that holds some, the tool answers `verdict: workspace_unselected`
+with `candidates`. Load one with `workspace_status(solution=<candidate>)`
+and repeat the same call; later ambiguous files follow the most recently
+selected candidate. `ROSLYN_MCP_SOLUTION` pins a single solution for the
+whole session instead. A root with no solution file anywhere keeps the old
+behaviour: Roslyn's `--autoLoadProjects` over the root.
+
+`references`/`rename_preview` never cross solutions — route cross-repo
+questions through `source-navigator` / `.amtcz/context.md`. Mapping a
+`.csproj` to the exact `.sln` that includes it is not attempted; the
+nearest-directory rule is the whole heuristic.
 
 ## Tools
 
 All positions are 1-based. Every result has a `verdict`:
-`ok | workspace_loading | file_not_found | server_error | server_dead | timeout`.
-An empty result with `workspace_loading` is **not** an answer — poll
-`workspace_status` and retry.
+`ok | workspace_loading | workspace_unselected | file_not_found | server_error | server_dead | timeout`,
+and every semantic result names the `solution` it was answered from. An
+empty result with `workspace_loading` is **not** an answer — poll
+`workspace_status` and retry. `workspace_unselected` carries `candidates`:
+call `workspace_status(solution=<one>)`, then repeat the same call.
 
 | tool | what it returns |
 |---|---|
-| `workspace_status(wait_seconds=0)` | alive/ready/uptime; starts or restarts Roslyn |
+| `workspace_status(wait_seconds=0, solution=None)` | discovered `solutions`, every loaded workspace, alive/ready of the current one; `solution=` loads/selects one; starts or restarts Roslyn |
 | `document_symbols(file)` | flattened symbols with container + position |
 | `definition(file,line,col)` | locations |
 | `implementations(file,line,col)` | locations of implementers/overrides |
@@ -149,12 +176,25 @@ An empty result with `workspace_loading` is **not** an answer — poll
 
 ## How it works / gotchas
 
-- One Roslyn process per MCP server process, spawned lazily, kept warm.
-  First `workspace_status(wait_seconds=120)` pays the project-load cost
-  (`--autoLoadProjects`); everything after is fast.
+- One Roslyn process per *solution*, spawned lazily on the first tool call
+  that touches a file of that solution, kept warm (LRU-capped by
+  `ROSLYN_MCP_MAX_WORKSPACES`). The first call into each solution pays the
+  project-load cost; `workspace_status(wait_seconds=120)` (or
+  `workspace_status(solution=…, wait_seconds=120)`) pays it up front.
+- A known solution is opened explicitly: the process is launched without
+  `--autoLoadProjects` and sent the `solution/open` notification
+  (`{"solution": <file uri>}`) right after `initialized` — the flow VS
+  Code's C# extension uses. Verified against roslyn-language-server
+  5.12.0-1.26426.8. Only the no-solution fallback still uses
+  `--autoLoadProjects`.
 - Readiness is gated on Roslyn's `workspace/projectInitializationComplete`
-  notification. Before it fires, semantic queries return empty arrays that
-  are indistinguishable from "no hits" — hence the verdict.
+  notification, which both flows emit. Before it fires, semantic queries
+  return empty arrays that are indistinguishable from "no hits" — hence the
+  verdict.
+- Discovery (`workspace_status.solutions`) scans at most 4 directories deep
+  and skips `bin`, `obj`, `node_modules`, `.git`, `.vs`, `.roslyn-mcp`. A
+  solution deeper than that is still found by the per-file walk-up, just
+  not listed.
 - Roslyn only answers for documents it has been sent via `didOpen`; the
   server opens files on first use and keeps them open. After editing a file
   on disk call `refresh_file` (or `diagnostics`, which refreshes implicitly).
@@ -180,9 +220,12 @@ installs) and installs the package editable plus `pytest`.
 Without uv: `python -m venv .venv && . .venv/bin/activate` (`.venv\Scripts\activate`
 on Windows), then `pip install -e ".[dev]" && pytest -q`.
 
-Unit tests cover shaping (`shaping.py`), URI handling, and the server→client
-request dispatch with a fake transport. End-to-end against a real solution
-is not automated yet — see "Verify" below.
+Unit tests cover shaping (`shaping.py`), URI handling, the server→client
+request dispatch and the `solution/open` handshake with a fake transport
+(`test_lsp_client.py`), solution discovery/resolution and the LRU pool
+(`test_workspaces.py`), and multi-solution routing through the real tool
+functions with a fake client pool (`test_server.py`). End-to-end against a
+real solution is not automated — see "Verify" below.
 
 ## Verify (manual, first run)
 
@@ -191,3 +234,7 @@ is not automated yet — see "Verify" below.
    `workspace_status(wait_seconds=120)` → expect `ready: true`.
 2. `document_symbols("src/Foo/Bar.cs")` → non-empty.
 3. `references` on a method in that file → `total > 0`.
+4. Multi-repo: point `ROSLYN_MCP_ROOT` at a folder holding `repo-a/A.sln`
+   and `repo-b/B.sln`; `document_symbols("repo-b/src/X.cs")` → `ok` with
+   `solution: repo-b/B.sln` and no `workspace_status` call first;
+   `.roslyn-mcp/B/` holds that process's log.
