@@ -220,5 +220,6 @@ solutions.
 | Scenario | Tool call |
 |---|---|
 | Just edited a file on disk, about to query it | call `refresh_file` first — Roslyn holds the document open and won't see the change otherwise (`diagnostics` refreshes implicitly) |
-| Quick per-file compile check after an edit | call `diagnostics` — no build. **Not a gate**: whole-solution verdicts still come from `sarif_build` |
+| Quick per-file compile check after an edit | call `diagnostics(min_severity="error")` — no build. Engineer: mandatory on every changed .cs before handoff. Reviewer: mandatory prefilter before `run-build`; a `CS` error skips the build. **Not a gate on its own**: per-file only, callers elsewhere are invisible; whole-solution verdicts still come from `sarif_build` |
+| Changed a public/internal signature | call `references` on the member before handoff — callers outside your scope are a Handoff item, not an edit |
 | Renaming a symbol | call `rename_preview`, review `by_file`, then apply the edits yourself — nothing on disk is touched by the tool |
