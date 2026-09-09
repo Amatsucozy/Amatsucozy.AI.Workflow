@@ -181,7 +181,14 @@ tools, not inside any single tool's own description.
 (the same engine as VS Code's C# extension), not from grep — a `references`
 result is the true call graph, and `rename_preview` computes but never
 applies. All line/column values are 1-based. Every result carries `verdict`:
-`ok | workspace_loading | file_not_found | server_error | server_dead | timeout`.
+`ok | workspace_loading | workspace_unselected | file_not_found | server_error | server_dead | timeout`.
+
+**One Roslyn process per solution.** The server root may hold several
+repositories; each tool maps its `file` to the nearest directory (walking up
+to the root) with exactly one `.sln`/`.slnx` and answers from that solution's
+process — no need to know which solution a file belongs to. Every semantic
+result names the `solution` it came from. `references` never crosses
+solutions.
 
 ### Quick Reference — by scenario
 
@@ -191,7 +198,9 @@ applies. All line/column values are 1-based. Every result carries `verdict`:
 |---|---|
 | First C# semantic question of the session | call `workspace_status(wait_seconds=120)` — pays the project-load cost once; the server stays warm afterwards |
 | Any tool returned `verdict == "workspace_loading"` | poll `workspace_status` until `ready: true`, then repeat the **same** call. An empty result under this verdict is not an answer |
-| `verdict == "server_dead"` | call `workspace_status` once — it restarts Roslyn. If it dies again, surface `log_dir` (`.roslyn-mcp/roslyn-stderr.log`) to the human; don't loop |
+| Any tool returned `verdict == "workspace_unselected"` | the file could be owned by several solutions (or none) — call `workspace_status(solution=<one of candidates>)`, then repeat the **same** call. Later ambiguous files follow that selection. Set `ROSLYN_MCP_SOLUTION` in the server config to pin one permanently |
+| Multi-repo root, want to pre-load one repo's solution | call `workspace_status(solution="<repo>/<X>.sln", wait_seconds=120)`; `workspace_status.workspaces` lists every loaded process (LRU-capped by `ROSLYN_MCP_MAX_WORKSPACES`, default 2) |
+| `verdict == "server_dead"` | call `workspace_status` once — it restarts Roslyn. If it dies again, surface `log_dir` (`.roslyn-mcp/<sln-stem>/roslyn-stderr.log`) to the human; don't loop |
 | `verdict == "file_not_found"` | the path is wrong (relative paths resolve against the server root, not the shell cwd) — fix the path, don't retry as-is |
 | `verdict == "timeout"` | first request after start on a large solution — re-check `workspace_status`, then retry once |
 
