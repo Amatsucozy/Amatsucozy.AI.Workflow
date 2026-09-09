@@ -9,7 +9,7 @@ forward. This file maps old to new and states what changed and why.
 | AMTCZ | Successor | Change |
 |---|---|---|
 | King (orchestrator) | **Main thread** via the `sdlc-orchestrator` skill (invoked on demand) | The main thread IS the orchestrator while the skill is active — no standing persona, so it cannot conflict with other agent setups in the same repo. Also absorbs the analyst role (requirements skill), since elicitation needs the human dialogue only the main thread has. |
-| Scout (investigation) | `researcher` subagent | Same job, now explicitly Haiku with hard search budgets (3 Glob + 8 Grep) and a fixed traversal order (context graph → glob → grep → read). |
+| Scout (investigation) | `researcher` subagent | Same job, now explicitly Haiku with hard search budgets (3 Glob + 8 Grep) and a fixed traversal order (project map → glob → grep → roslyn → read). |
 | Steward (planning) | `planning` skill, main thread | Demoted from agent to skill — planning is judgment the human negotiates in plan mode, so a subagent handoff only added a lossy boundary. |
 | Knight (implementation) | `engineer` subagent | 3-strike escalation kept. New: hard no-build rule (verification decoupled), scope-as-fence, mandatory Deviations section. |
 | Chancellor (post-exec audit) + Sentinel | `reviewer` subagent | Merged. Key upgrade: guaranteed fresh context — receives artifacts only, never transcripts, so it can't inherit the implementer's bias. |
@@ -50,10 +50,12 @@ forward. This file maps old to new and states what changed and why.
    (Experience entries KEEP their frontmatter — it is their retrieval index;
    only task documents went frontmatter-free.)
 3. Attach your Jira/GitHub MCP declarations at project scope so the main
-   thread can use them (e.g. `.mcp.json`); do not attach any MCP server to the
-   worker subagents.
-4. Install `source-navigator` / `source-indexer` skills where subagents can see
-   them (project `.claude/skills/` or `~/.claude/skills/`).
+   thread can use them (e.g. `.mcp.json`). The worker subagents get no remote
+   MCP; the local `roslyn` server is the one exception, and each agent file
+   names the exact roslyn tools it carries.
+4. Optionally add a `## Project Map` section to the target repo's `CLAUDE.md`
+   (format in the kit `CLAUDE.md`'s Project Map reference) so the researcher
+   can orient in a multi-project repo before it starts searching.
 5. In-flight AMTCZ tasks: finish them under the old system; start new tasks
    here. The On Invocation scan covers new-style tasks via main.yaml when you
    signal resume/continue; surface old-style in-flight tasks manually (their

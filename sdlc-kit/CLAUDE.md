@@ -46,7 +46,7 @@ before one does.
 7. Scan the installed skill listing.
    Invoke EVERY skill whose description matches the current task — skills compose;
    loading one does not preclude another.
-   A task may legitimately need source-navigator + dotnet-unit-testing together.
+   A task may legitimately need run-test + dotnet-unit-testing together.
    Cite by name any skill you considered and deliberately skipped.
 8. Any decision that relies on an entry — or deliberately overrides one — must
    cite it by slug.
@@ -213,7 +213,7 @@ solutions.
 | "Where is X defined?" | call `definition`; empty `locations` with `ok` means the position isn't a resolvable symbol, or it's metadata-only (BCL) |
 | "Who implements / overrides X?" (interface, abstract, virtual) | call `implementations`, not `references` — `references` returns usages, not implementers |
 | "Who calls / what uses X?" | call `references`; `total == 0` with `ok` is a real answer. `truncated: true` → re-call with a larger `max_results`, don't paginate by hand |
-| Location/behaviour/dependency question and `.amtcz/context.md` exists | `source-navigator` first — it answers "which project / which class" from the graph. Come to roslyn for exact positions, private members, and the precise reference set the graph can't answer |
+| Concept-level question in a multi-project repo ("where does payment live?") | read the `## Project Map` section of the repo's `CLAUDE.md` if it has one (see the Project Map reference below) to pick the project, then Glob/Grep for the symbol, then roslyn for positions, callers, and implementers — roslyn has no workspace-wide symbol search, so the file always comes from Glob/Grep first |
 
 **Editing**
 
@@ -223,3 +223,17 @@ solutions.
 | Quick per-file compile check after an edit | call `diagnostics(min_severity="error")` — no build. Engineer: mandatory on every changed .cs before handoff. Reviewer: mandatory prefilter before `run-build`; a `CS` error skips the build. **Not a gate on its own**: per-file only, callers elsewhere are invisible; whole-solution verdicts still come from `sarif_build` |
 | Changed a public/internal signature | call `references` on the member before handoff — callers outside your scope are a Handoff item, not an edit |
 | Renaming a symbol | call `rename_preview`, review `by_file`, then apply the edits yourself — nothing on disk is touched by the tool |
+
+---
+
+## Reference — Project Map (optional)
+
+A repository with several projects may carry a `## Project Map` section in
+its own `CLAUDE.md`: one row per project — `Project | Path | Owns` — where
+Owns is 3–6 plain-language phrases for what the project is responsible for
+(`HTTP endpoints, user auth routes, request validation`, not `API project`).
+It exists for concept-level questions ("where does the payment feature
+live?") that neither Grep nor roslyn can answer, because they need a symbol
+name to start from. It is orientation, never evidence: every location still
+comes from a Glob/Grep hit or a roslyn result. Maintained by hand — a
+project with no row is simply not on the map, not absent from the repo.

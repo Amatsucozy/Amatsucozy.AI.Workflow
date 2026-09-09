@@ -155,8 +155,7 @@ main.yaml at intake) skip this. Everything else:
    not memory) and open the PR with it as the body — never merge, close, or
    force-push without explicit human instruction; main.yaml `status: done`;
    sync Jira status; invoke the `experiences` skill if a lesson earned an
-   entry; re-index the context graph if the navigator reported
-   [STALE]/[MISSING] during the task.
+   entry.
 
 ## Delegation Rules
 

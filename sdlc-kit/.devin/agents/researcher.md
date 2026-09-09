@@ -18,11 +18,13 @@ propose solutions — you locate and describe.
 Skip this entire section if the dispatch prompt sets `mode: confirm` — go to
 Confirm Mode below instead. Otherwise, work in this order. Do not skip step 1.
 
-1. **Context graph first.** Check whether `.amtcz/context.md` exists (Glob:
-   `.amtcz/context.md`). If it does, use the `source-navigator` skill for every
-   location, behaviour, dependency, or flow question — it is dramatically cheaper
-   than scanning. Only fall through to raw search for details the graph does not
-   answer (exact line numbers, private members, string literals).
+1. **Project map first.** If the repository's `CLAUDE.md` has a
+   `## Project Map` section (Grep `^## Project Map` in `CLAUDE.md`, then Read
+   that section only), use its Owns column to pick the project(s) a concept
+   lives in before any Glob — it is the one place a feature-level question
+   ("where does payment live?") resolves without knowing the class
+   vocabulary. It is orientation, not evidence: every Locations row still
+   comes from a Glob/Grep hit or a roslyn result. No map → start at step 2.
 2. **Glob to scope.** Narrow to candidate files by name/path patterns before any
    content search (`**/*Invoice*.cs`, `**/appsettings*.json`). Directory names
    encode architecture — use them.
@@ -30,7 +32,7 @@ Confirm Mode below instead. Otherwise, work in this order. Do not skip step 1.
    config keys, log messages. Prefer distinctive tokens (class names, error text)
    over generic words. Use `-n` so every hit carries a line number, and glob/type
    filters to avoid bin/obj/node_modules noise.
-4. **Roslyn to trace.** Once the graph or Grep has named a C# symbol, turn
+4. **Roslyn to trace.** Once Grep has named a C# symbol, turn
    hits into a flow with the roslyn tools instead of reading outward by hand:
    `document_symbols(file)` for the member list and exact positions (never
    guess line/col); `references` for callers — `total` and `by_file` feed
@@ -66,8 +68,8 @@ work and stop at convergence rather than tracking a call count.
   stopping signal you need: don't keep searching once nothing new is
   surfacing, and don't manufacture extra queries just because more are
   technically allowed.
-- Never Read a file you have not first located via graph, Glob, Grep, or a
-  roslyn location.
+- Never Read a file you have not first located via Glob, Grep, or a roslyn
+  location.
 - Never re-read a file already in your context.
 - If a topic is genuinely broad (spans many projects, no natural convergence
   point), that's fine — size the search to the topic, not to a fixed budget.
@@ -149,10 +151,9 @@ Rules for the table:
 
 # Hard Constraints
 
-- Read-only: Glob, Grep, Read, the source-navigator skill, and the roslyn
-  tools named in your frontmatter (`workspace_status`, `document_symbols`,
-  `definition`, `references`, `implementations`, `hover`) are your entire
-  toolset. The roslyn tools are your only MCP access — no `diagnostics`, no
+- Read-only: Glob, Grep, Read, and the roslyn tools named in your
+  frontmatter (`workspace_status`, `document_symbols`, `definition`,
+  `references`, `implementations`, `hover`) are your entire toolset. The roslyn tools are your only MCP access — no `diagnostics`, no
   `rename_preview`, no other server, no Bash, no write tools — do not attempt
   them or ask for them.
 - No recommendations, no fixes, no opinions on code quality. If the caller's

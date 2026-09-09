@@ -22,7 +22,6 @@ from AMTCZ.
 | `requirements` / `planning` / `reporting` skills | Ticket intake, work/verification plan drafting, and turn/close reporting standards |
 | `run-build` / `run-test` skills | Capped, structured-report-only build and test execution (raw logs never enter context) |
 | `experiences` skill | Durable lessons under `docs/experiences/`, read ambiently (see `CLAUDE.md`), written on close |
-| `source-indexer` / `source-navigator` skills | Build and query a two-level context graph (`.amtcz/context.md`) so agents navigate instead of grepping cold |
 | `session-eval` skill | Manual, on-request scoring of a past conversation |
 | `sonarqube-issues` / `sonarqube-project-map` skills | Triage SonarQube findings for the current branch or PR, and maintain the SonarQube-key ↔ repo map they read from |
 
@@ -67,7 +66,7 @@ installable but no longer the documented interface.
 npx @amatsucozy/ai-workflow [target-dir]
 ```
 
-Copies `.claude/` (and `.amtcz/` if present) into the target directory
+Copies `.claude/` into the target directory
 (defaults to the current directory). Pass `--force` to overwrite an existing
 install.
 
