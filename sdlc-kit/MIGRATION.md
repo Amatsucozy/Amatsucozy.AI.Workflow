@@ -54,7 +54,7 @@ forward. This file maps old to new and states what changed and why.
    MCP; the local `roslyn` server is the one exception, and each agent file
    names the exact roslyn tools it carries.
 4. Optionally add a `## Project Map` section to the target repo's `CLAUDE.md`
-   (format in the kit `CLAUDE.md`'s Project Map reference) so the researcher
+   (a `Project | Path | Owns` table, Owns in plain language) so the researcher
    can orient in a multi-project repo before it starts searching.
 5. In-flight AMTCZ tasks: finish them under the old system; start new tasks
    here. The On Invocation scan covers new-style tasks via main.yaml when you
