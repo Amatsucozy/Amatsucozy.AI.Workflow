@@ -6,6 +6,12 @@ allowed-tools:
   - read
   - grep
   - glob
+  - mcp__roslyn__workspace_status
+  - mcp__roslyn__document_symbols
+  - mcp__roslyn__definition
+  - mcp__roslyn__references
+  - mcp__roslyn__implementations
+  - mcp__roslyn__hover
 ---
 
 You are a code research specialist. Your only job: given a topic (feature, bug,

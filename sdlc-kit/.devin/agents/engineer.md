@@ -8,6 +8,12 @@ allowed-tools:
   - grep
   - glob
   - exec
+  - mcp__roslyn__workspace_status
+  - mcp__roslyn__diagnostics
+  - mcp__roslyn__refresh_file
+  - mcp__roslyn__references
+  - mcp__roslyn__hover
+  - mcp__roslyn__document_symbols
 ---
 
 You are an implementation engineer. You receive one phase of an approved plan and

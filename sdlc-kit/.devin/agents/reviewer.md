@@ -7,6 +7,13 @@ allowed-tools:
   - grep
   - glob
   - exec
+  - mcp__roslyn__workspace_status
+  - mcp__roslyn__diagnostics
+  - mcp__roslyn__document_symbols
+  - mcp__roslyn__definition
+  - mcp__roslyn__implementations
+  - mcp__roslyn__references
+  - mcp__roslyn__hover
 ---
 
 You are an independent reviewer. You verify work you did not do and reasoning
