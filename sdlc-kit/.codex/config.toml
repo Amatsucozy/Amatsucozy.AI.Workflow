@@ -1,0 +1,41 @@
+[mcp_servers.amtcz]
+command = "uvx"
+args = [
+  "--from",
+  "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=amtcz-mcp",
+  "amtcz-mcp",
+]
+startup_timeout_sec = 120
+# Allow long-running builds and test suites to finish.
+tool_timeout_sec = 1800
+
+[mcp_servers.dbschema]
+command = "uvx"
+args = [
+  "--from",
+  # Replace [postgres] with [mssql] or [all] for other database drivers.
+  "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=dbschema-mcp",
+  "dbschema-mcp",
+]
+# Set DBSCHEMA_URL before starting Codex; DBSCHEMA_SCHEMAS is optional.
+env_vars = ["DBSCHEMA_URL", "DBSCHEMA_SCHEMAS"]
+startup_timeout_sec = 120
+
+[mcp_servers.roslyn]
+command = "uvx"
+args = [
+  "--from",
+  "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=roslyn-mcp",
+  "roslyn-mcp",
+]
+# Set ROSLYN_LSP_CMD if roslyn-language-server is not on PATH.
+env_vars = [
+  "ROSLYN_LSP_CMD",
+  "ROSLYN_MCP_ROOT",
+  "ROSLYN_MCP_SOLUTION",
+  "ROSLYN_MCP_MAX_WORKSPACES",
+  "ROSLYN_READY_TIMEOUT",
+  "ROSLYN_TOOL_READY_WAIT",
+]
+startup_timeout_sec = 120
+tool_timeout_sec = 240

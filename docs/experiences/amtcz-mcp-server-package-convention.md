@@ -49,7 +49,7 @@ one-liners were rewritten as `verdict meanings:` blocks. Final state: 44 tests
 passing, `git add -An` staging exactly the 20 intended files. Reference
 implementation to copy from: `amtcz-mcp/` (`server.py`, `.gitignore`,
 `.mcp.json.example`, `tests/test_server.py`) and the "Reference — amtcz-mcp
-tools" block in `sdlc-kit/CLAUDE.md`.
+tools" block in `sdlc-kit/.claude/CLAUDE.md`.
 
 ## Applies When / Not When
 Applies to Python MCP servers living as sibling packages in this repo, which
