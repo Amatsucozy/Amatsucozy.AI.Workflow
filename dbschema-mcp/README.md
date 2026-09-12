@@ -66,7 +66,7 @@ Copy [`.mcp.json.example`](.mcp.json.example) to your target repo's
       "command": "uvx",
       "args": [
         "--from",
-        "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=dbschema-mcp",
+        "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.1.0#subdirectory=dbschema-mcp",
         "dbschema-mcp"
       ],
       "env": { "DBSCHEMA_URL": "postgresql://app:secret@localhost/shop" }

@@ -2,7 +2,7 @@
 command = "uvx"
 args = [
   "--from",
-  "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=amtcz-mcp",
+  "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.1.0#subdirectory=amtcz-mcp",
   "amtcz-mcp",
 ]
 startup_timeout_sec = 120
@@ -14,7 +14,7 @@ command = "uvx"
 args = [
   "--from",
   # Replace [postgres] with [mssql] or [all] for other database drivers.
-  "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=dbschema-mcp",
+  "dbschema-mcp[postgres] @ git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.1.0#subdirectory=dbschema-mcp",
   "dbschema-mcp",
 ]
 # Set DBSCHEMA_URL before starting Codex; DBSCHEMA_SCHEMAS is optional.
@@ -25,7 +25,7 @@ startup_timeout_sec = 120
 command = "uvx"
 args = [
   "--from",
-  "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=roslyn-mcp",
+  "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.1.0#subdirectory=roslyn-mcp",
   "roslyn-mcp",
 ]
 # Set ROSLYN_LSP_CMD if roslyn-language-server is not on PATH.

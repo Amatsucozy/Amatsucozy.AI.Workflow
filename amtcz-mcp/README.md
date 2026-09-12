@@ -64,7 +64,7 @@ from GitHub, no local clone required:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.0.0#subdirectory=amtcz-mcp",
+        "git+https://github.com/Amatsucozy/Amatsucozy.AI.Workflow.git@v1.1.0#subdirectory=amtcz-mcp",
         "amtcz-mcp"
       ]
     }
@@ -72,7 +72,7 @@ from GitHub, no local clone required:
 }
 ```
 
-Pinned to the `v1.0.0` release tag — more stable than tracking `main`, which
+Pinned to the `v1.1.0` release tag — more stable than tracking `main`, which
 moves as other packages in this repo change. Bump the tag when you want a
 newer `amtcz-mcp`.
 
