@@ -148,8 +148,9 @@ selected candidate. `ROSLYN_MCP_SOLUTION` pins a single solution for the
 whole session instead. A root with no solution file anywhere keeps the old
 behaviour: Roslyn's `--autoLoadProjects` over the root.
 
-`references`/`rename_preview` never cross solutions — route cross-repo
-questions through `source-navigator` / `.amtcz/context.md`. Mapping a
+`references`/`rename_preview` never cross solutions — a cross-repo question
+is answered one solution at a time (`workspace_status(solution=...)` to
+select each) and stitched together by the caller. Mapping a
 `.csproj` to the exact `.sln` that includes it is not attempted; the
 nearest-directory rule is the whole heuristic.
 

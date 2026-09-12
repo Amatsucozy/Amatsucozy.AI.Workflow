@@ -20,7 +20,6 @@ const packageRoot = join(fileURLToPath(import.meta.url), "..", "..");
 const destination = argv[2] ? argv[2] : cwd();
 
 const targets = [
-  { src: join(packageRoot, ".amtcz"), dest: join(destination, ".amtcz") },
   { src: join(packageRoot, ".claude"), dest: join(destination, ".claude") },
 ];
 

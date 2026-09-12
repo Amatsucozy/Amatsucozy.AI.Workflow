@@ -54,7 +54,7 @@ extension — classify before acting; never begin ad-hoc investigation:
 |---|---|---|---|
 | Analyst | you, main thread | clarifies requirements, writes ticket | guesses at ambiguities |
 | Designer | you, main thread (plan mode) | approach + work/verification plans | designs before research |
-| Researcher | `researcher` (Haiku) | maps files/members/lines, read-only | recommends solutions |
+| Researcher | `researcher` (Haiku) | maps files/members/lines, read-only (Grep + roslyn navigation) | recommends solutions |
 | Engineer | `engineer` (Sonnet) | one plan phase inside its file scope | builds, tests, scope creep |
 | Reviewer | `reviewer` (Sonnet) | runs gates via `run-build`/`run-test` skills; verdicts | edits code |
 
@@ -120,10 +120,12 @@ main.yaml at intake) skip this. Everything else:
    dispatch carries: ticket, current phase only, exact file scope, done-when,
    prior handoff notes, confirmed-relevant experience lessons (subagents
    don't search experiences), and the pipeline contracts (scope fence, no
-   builds/tests, report deviations — specialist prompts don't know them).
+   builds/tests, roslyn `diagnostics` on every changed .cs file before
+   handoff, report deviations — specialist prompts don't know them).
    One phase at a time; commit each boundary: `<id>: phase N — <name>`.
-5. **Verify.** At each planned gate, dispatch `reviewer` with the diff range
-   and the gate's checks — artifacts only, never transcripts. It runs builds
+5. **Verify.** At each planned gate, dispatch `reviewer` with the diff range,
+   the gate's checks, and the engineer's Deviations/Diagnostics/Handoff
+   sections — artifacts only, never transcripts. It runs builds
    and tests itself via the `run-build`/`run-test` skills and returns the
    verdict with their structured report tables. On FAIL or PARTIAL — whether
    the reviewer reported it or the human did:
@@ -153,8 +155,7 @@ main.yaml at intake) skip this. Everything else:
    not memory) and open the PR with it as the body — never merge, close, or
    force-push without explicit human instruction; main.yaml `status: done`;
    sync Jira status; invoke the `experiences` skill if a lesson earned an
-   entry; re-index the context graph if the navigator reported
-   [STALE]/[MISSING] during the task.
+   entry.
 
 ## Delegation Rules
 
@@ -165,7 +166,11 @@ main.yaml at intake) skip this. Everything else:
   Can't write a self-contained dispatch? The ticket or plan isn't ready.
 - 3 strikes on the same step → stop, summarize to the human, wait.
 - Engineer and reviewer never share context.
-- Workers get no MCP; remote operations are yours.
+- Workers get no remote MCP (Jira, GitHub, Confluence stay yours). The local
+  `roslyn` server is the one exception: researcher, engineer, and reviewer
+  carry the roslyn tools their frontmatter lists — read-only, no network,
+  no build.
+  A worker dispatch never grants an MCP tool the agent file doesn't name.
 
 ## Task Folder
 
@@ -196,6 +201,10 @@ carry no frontmatter — a state field found anywhere else is a bug.
   reviewer gates. Main-thread use is permitted only on explicit human request
   in that turn — never to self-verify pipeline work. Their capped pipelines
   are mandatory; raw logs never enter any context.
+- An engineer output with a `.cs` change and no `## Diagnostics` section, or
+  a `.cs` file in Changed Files missing from it, is an incomplete phase: do
+  not commit the boundary; re-dispatch the engineer for the diagnostics
+  rows only.
 - Plans need human approval; deviations are reported before continuing, not
   after.
 - Gate failures never authorize autonomous fixing. An engineer dispatch for
