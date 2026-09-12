@@ -26,13 +26,15 @@ from AMTCZ.
 | `sonarqube-issues` / `sonarqube-project-map` skills | Triage SonarQube findings for the current branch or PR, and maintain the SonarQube-key ↔ repo map they read from |
 
 All of it lives under [`sdlc-kit/`](sdlc-kit) as a `.claude/` directory tree
-you install into a target repository, plus reference docs
-([`CLAUDE.md`](sdlc-kit/CLAUDE.md), [`TUNING.md`](sdlc-kit/TUNING.md),
-[`MIGRATION.md`](sdlc-kit/MIGRATION.md), [`SESSION.md`](sdlc-kit/SESSION.md))
-that explain the design and its open questions. `CLAUDE.md` carries the
-experience-first task routing and the cross-tool quick-reference tables for
-the three MCP servers inline (always-on) rather than as separate skills — see
-`TUNING.md` for why.
+you install into a target repository — including its project instructions at
+[`.claude/CLAUDE.md`](sdlc-kit/.claude/CLAUDE.md), so the install carries them
+instead of leaving you to merge a loose file — plus reference docs
+([`TUNING.md`](sdlc-kit/TUNING.md), [`MIGRATION.md`](sdlc-kit/MIGRATION.md),
+[`SESSION.md`](sdlc-kit/SESSION.md)) that explain the design and its open
+questions. `CLAUDE.md` carries the working conventions, the experience-first
+task routing, and the cross-tool quick-reference tables for the three MCP
+servers inline (always-on) rather than as separate skills — see `TUNING.md`
+for why. [`sdlc-kit/AGENTS.md`](sdlc-kit/AGENTS.md) is its Codex counterpart.
 
 [`sdlc-kit/.devin/`](sdlc-kit/.devin) mirrors the four agents for Devin: same
 prose contracts, Devin-shaped frontmatter (`allowed-tools`, Devin model ids).
@@ -72,7 +74,7 @@ install.
 
 You can also skip the installer and copy `sdlc-kit/.claude/` into your
 repository's `.claude/` directory by hand — merge rather than replace if you
-already have agents/skills there.
+already have agents, skills, or a `CLAUDE.md` there.
 
 ## Using it
 

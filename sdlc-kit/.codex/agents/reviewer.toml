@@ -16,8 +16,9 @@ Tool prefixes may differ by installation; match the server and operation.
 If unavailable, follow the role's unavailable-tool handling and report the gap.
 
 For a referenced skill, read its `SKILL.md` and follow its instructions using
-available tools. Prefer an installed Codex skill; otherwise read the matching
-repository `.claude/skills/<name>/SKILL.md` as workflow documentation. If a
+available tools. Prefer an installed Codex skill; otherwise read the matching repository
+`.agents/skills/<name>/SKILL.md` (relative to the kit/project root), then
+`.claude/skills/<name>/SKILL.md` as legacy workflow documentation. If a
 mandatory skill is missing or cannot run with available tools, report the
 blocked check or task; never claim it ran.
 

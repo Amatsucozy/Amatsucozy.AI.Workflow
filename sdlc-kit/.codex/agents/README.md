@@ -9,6 +9,10 @@ These standalone TOML definitions mirror the four roles in `.claude/agents/`:
 | `reviewer` | Independently execute verification gates, builds, tests, and acceptance checks. |
 | `pr-reviewer` | Draft evidence-based comments on another author's PR for human approval. |
 
+The companion [`../../AGENTS.md`](../../AGENTS.md) adapts the kit's project
+instructions for Codex, including experience routing and MCP references.
+Place it at the target project root, merging with existing instructions.
+
 Copy the TOML files into your target project's `.codex/agents/` directory, or
 into `~/.codex/agents/` for personal use. When working from `sdlc-kit/`, they
 already occupy the project directory. Ask Codex explicitly to use the named
@@ -21,8 +25,23 @@ effort are inherited; Claude's `haiku` and `sonnet` settings are not carried ove
 
 Configure the `roslyn` MCP server in the target Codex environment for semantic
 C# operations. The reviewer also requires the `run-build` and `run-test` skills.
-Agents prefer installed Codex skills and can read the corresponding repository
-`.claude/skills/<name>/SKILL.md` when available. Copying these agent files alone
+The 10 Codex skill counterparts live in [`../../.agents/skills/`](../../.agents/skills/).
+Copy that directory to your target project's `.agents/skills/`, or copy its
+skill folders to `~/.agents/skills/` for personal use. Codex discovers them
+when launched from the target project (from `sdlc-kit/` when using this kit).
+Invoke a skill with `$skill-name`, for example `$sdlc-orchestrator` or
+`$run-build`. This uses the documented
+[Codex skill location and invocation format](https://learn.chatgpt.com/docs/build-skills).
+
+The counterparts preserve the task documents, build/test verdict contracts,
+session scoring rubric, and SonarQube mapping template. They adapt agent
+dispatch, tool discovery, shell usage, and report paths for Codex. Configure
+amtcz for build/test tools and Roslyn for semantic C# operations; SonarQube
+skills need SonarQube access, and project mapping also needs GitHub search.
+Skill instructions do not install agents or MCP servers.
+
+Agents prefer installed Codex skills, then the kit's `.agents/skills/`, and
+can read `.claude/skills/<name>/SKILL.md` as a legacy fallback. Copying these agent files alone
 does not install skills or configure MCP servers. Project map and Roslyn
 orientation references prefer `AGENTS.md`, with `CLAUDE.md` as a fallback.
 
