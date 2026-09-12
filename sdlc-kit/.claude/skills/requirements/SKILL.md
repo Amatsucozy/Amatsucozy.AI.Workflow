@@ -1,7 +1,6 @@
 ---
 name: requirements
-description: >
-  Requirements elicitation and ticket writing for the analyst role. Use at task intake — whenever the human describes work to do, reports a bug, pastes a Jira ticket, or asks for a feature. Governs the clarifying-question process, the ticket document at docs/tasks/<id>/ticket.md, and the creation of the task state file docs/tasks/<id>/main.yaml. Always use before dispatching any researcher or writing any plan.
+description: Requirements elicitation and ticket writing at SDLC task intake — when the human describes work, reports a bug, pastes a Jira ticket, or asks for a feature. Governs the clarifying questions, docs/tasks/<id>/ticket.md, and the task state file main.yaml. Runs before any researcher dispatch or plan.
 ---
 
 # Requirements & Ticket Writing
@@ -36,10 +35,10 @@ Decided once at intake, alongside `workflow` — mechanical, not a feel call. De
 `full`. Set `research: pinpointed` only when ALL of these hold for EVERY AC:
 
 - The ticket cites a row in an attached or pasted machine-generated diagnostic
-  source — a SonarQube export, a SARIF table (`amtcz sarif probe`/`build` output),
-  a TRX failure table (`amtcz test probe`/`run` output), a compiler error list, or
-  a stack trace — that names an exact file path AND a line number or an
-  unambiguous symbol.
+  source — a SonarQube export, a `sarif_build`/`sarif_probe` error table, a
+  `test_run`/`test_probe` failure table, a compiler error list, or a stack
+  trace — that names an exact file path AND a line number or an unambiguous
+  symbol.
 - The source is tool output, not human recollection. "It's somewhere in
   AuthController" does not qualify; a pasted SonarQube row with `file:
   AuthController.cs, line: 142` does.
@@ -48,16 +47,14 @@ Decided once at intake, alongside `workflow` — mechanical, not a feel call. De
   no matter how precisely X itself is located.
 
 One AC failing any of these downgrades the WHOLE ticket to `full` — no
-partial-pinpointed tickets, and no self-assessed exceptions either: this is a
-source-format check, not a confidence check, for the same reason the experience
-routing in CLAUDE.md is unconditional rather than "if unsure" — a classification
-that feels right from the inside is not a classification you can trust. Record the
-field and move on; do not ask the human to confirm it.
+partial-pinpointed tickets, and no self-assessed exceptions: this is a
+source-format check, not a confidence check, and a classification that feels
+right from the inside is not one you can trust. Record the field and move on;
+do not ask the human to confirm it.
 
-`research: pinpointed` changes the shape of the researcher dispatch (see
-sdlc-orchestrator SKILL.md → Workflow step 2) — it does not skip the researcher,
-and it changes nothing else in the pipeline: plan/implement/verify still run in
-full.
+`research: pinpointed` changes only the shape of the researcher dispatch
+(sdlc-orchestrator → Workflow step 2, Confirm Mode) — it does not skip the
+researcher, and plan/implement/verify still run in full.
 
 For `workflow: trivial`, this field is not evaluated (trivial bypasses research
 entirely) — record `full` as the harmless unused default.
@@ -162,6 +159,5 @@ already did research" is not a reason to skip research here.
 - Condense Jira imports; never paste descriptions wholesale. The ticket is the
   distilled contract and is usually shorter than its source.
 - A ticket with open questions does not advance to research. Ask, or park it.
-- `research: pinpointed` requires machine-generated file/line citations for
-  every AC — a ticket that merely *looks* simple still gets `full`. Ease of
+- A ticket that merely *looks* simple still gets `research: full` — ease of
   the fix and precision of the location are different questions.

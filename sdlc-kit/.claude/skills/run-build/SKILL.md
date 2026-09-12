@@ -1,23 +1,21 @@
 ---
 name: run-build
-description: Compile a .NET solution/project and produce an error-only structured report (file, line, code, message) via the `sarif_build` tool — one call runs the quiet SARIF-logged build and the extraction; raw build logs never enter context. Use whenever a build must run — at verification gates, in compile-check fix loops, or when the human asks "build", "does it compile", "what's broken". Never at normal verbosity; never for fixing.
+description: Compile a .NET solution or project via the `sarif_build` tool and report an error-only structured table (file, line, code, message); raw build logs never enter context. Use at verification gates, in compile-fix loops, or when the human asks to build / "does it compile" / "what's broken". Reports only — never fixes.
 ---
 
 # Run Build
 
-Compile and report failures with surgical precision. The `sarif_build` tool
-owns the whole sequence — `dotnet build -v q -nologo` with per-project SARIF
-output, console to a temp file (last 8 lines echoed, Time Elapsed included),
-a `logs: N fresh, M carried` line, and the deduped error table. Carried logs
-are valid evidence: MSBuild skips the compiler for up-to-date projects, and
-a log whose compile was skipped reflects unchanged inputs. Its returned
+The `sarif_build` tool owns the whole sequence — `dotnet build -v q -nologo`
+with per-project SARIF output, console to a temp file (last 8 lines echoed,
+Time Elapsed included), a `logs: N fresh, M carried` line, and the deduped
+error table. Carried logs are valid evidence: MSBuild skips the compiler for
+up-to-date projects, so a carried log reflects unchanged inputs. The returned
 `verdict` field IS the verdict; never re-derive it from the output.
 
-The `sarif_build`/`sarif_probe` tools are assumed available — no fallback
-branch. If the tool is unavailable/unregistered, stop and tell the human
-directly; this skill has no degraded mode. Never grep console text on your
-own initiative. Full reference beyond what's below: CLAUDE.md → Reference —
-amtcz-mcp tools (inlined always-on).
+`sarif_build`/`sarif_probe` are assumed registered — there is no fallback
+branch and no degraded mode. If the tool is unavailable, stop and tell the
+human; never substitute raw `dotnet build` or grep console text on your own
+initiative. Scenario table: CLAUDE.md → Reference — amtcz-mcp tools.
 
 ## Procedure
 
@@ -35,15 +33,14 @@ amtcz-mcp tools (inlined always-on).
    | `no_sarif_logs` | zero SARIF logs anywhere (none fresh, none carried) | ErrorLog not applied — infrastructure problem; report the console tail line, no retries |
    | `gap_msbuild_failure` | build failed but zero compiler diagnostics — MSBuild-level (restore/SDK/references) | single error row from the informative console-tail line; no param-juggling retries |
    | `dotnet_not_found` | dotnet not on PATH | environment problem; surface to the human |
-3. Re-inspection without rebuilding (e.g. a larger `max_rows` after
-   truncation, or `warnings=true` on request):
+3. Re-inspection without rebuilding (a larger `max_rows` after truncation, or
+   `warnings=true` on request):
    ```
    sarif_probe(root=".", max_rows=60)
    ```
    Never rebuild just to re-read a report that is already on disk.
-4. On success report elapsed (Time Elapsed line is in the echoed console
-   tail) plus the warning count only — no warning list unless asked
-   (`warnings=true` prints it when it is).
+4. On success report elapsed (from the echoed console tail) plus the warning
+   count only — no warning list unless asked (`warnings=true` prints it).
 
 ## Report Format
 

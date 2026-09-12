@@ -1,21 +1,19 @@
 ---
 name: run-test
-description: Run a .NET test suite or filtered scope and produce a failure-only structured report (test, file:line, message) via the `test_run` tool — one call runs the stale-TRX cleanup, the quiet TRX-logged test run, and the extraction; raw test output never enters context. Use whenever tests must run — at verification gates (with no_build=true after a successful build), in failing-test fix loops, or when the human asks to "run tests", "why are tests failing". Never for fixing; never for verdicts beyond pass/fail counts.
+description: Run a .NET test suite or filtered scope via the `test_run` tool and report a failure-only structured table (test, file:line, message); raw test output never enters context. Use at verification gates (no_build=true after a successful build), in failing-test fix loops, or when the human asks to run tests / "why are tests failing". Reports pass/fail counts only — never fixes.
 ---
 
 # Run Test
 
-Run tests and report failures with surgical precision. The `test_run` tool
-owns the whole sequence — stale-TRX cleanup, `dotnet test -v q --nologo` with
-the TRX logger, console to a temp file (last 8 lines echoed), and the
-failure-only table with repo-relative locations. Its returned `verdict`
-field IS the verdict; never re-derive it from the output.
+The `test_run` tool owns the whole sequence — stale-TRX cleanup, `dotnet test
+-v q --nologo` with the TRX logger, console to a temp file (last 8 lines
+echoed), and the failure-only table with repo-relative locations. The
+returned `verdict` field IS the verdict; never re-derive it from the output.
 
-The `test_run`/`test_probe` tools are assumed available — no fallback
-branch. If the tool is unavailable/unregistered, stop and tell the human
-directly; this skill has no degraded mode. Never grep test console output
-on your own initiative. Full reference beyond what's below: CLAUDE.md →
-Reference — amtcz-mcp tools (inlined always-on).
+`test_run`/`test_probe` are assumed registered — there is no fallback branch
+and no degraded mode. If the tool is unavailable, stop and tell the human;
+never substitute raw `dotnet test` or grep console output on your own
+initiative. Scenario table: CLAUDE.md → Reference — amtcz-mcp tools.
 
 ## Procedure
 
@@ -32,7 +30,7 @@ Reference — amtcz-mcp tools (inlined always-on).
    | `pass` | ran, zero failures (skips/inconclusive don't fail) | report PASS + counts |
    | `fail` | one or more failed/errored — table printed | report FAIL with the table |
    | `no_trx` | no/malformed TRX (host crash, dropped logger, results-dir mismatch) | infrastructure problem; report the console tail line, no retries |
-   | `zero_discovered` | TRX present but 0 tests discovered (bad filter, wrong target, no test SDK) | single error row from the console tail; fix the invocation, don't loop |
+   | `zero_discovered` | TRX present but 0 tests discovered (bad filter, wrong target, no test SDK) | single error row from the console tail; fix the invocation once, don't loop |
    | `dotnet_not_found` | dotnet not on PATH | environment problem; surface to the human |
 3. Re-inspection without rerunning (larger `max_rows` after truncation):
    ```
