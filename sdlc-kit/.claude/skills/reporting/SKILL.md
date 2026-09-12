@@ -1,7 +1,6 @@
 ---
 name: reporting
-description: >
-  Inline turn reports and final-report consolidation. Use at the end of every turn in which work happened on an active task (report inline in chat, as a table), and at task close to produce docs/tasks/<id>/final-report.md which becomes the PR body. Also governs the durable progress fields in docs/tasks/<id>/main.yaml.
+description: Inline turn reports, main.yaml progress fields, and the final report for an active SDLC task. Use at the end of every turn that changed the repo, at phase boundaries and gates, and at task close — docs/tasks/<id>/final-report.md becomes the PR body.
 ---
 
 # Reporting
@@ -19,7 +18,8 @@ One table plus at most two lines. Uneventful turns get the table only.
 |---|---|---|---|---|---|
 | 2/4 | in-progress | none | engineer ×1 | 3 files (src/Api ×2, tests ×1) | none |
 
-- **Changed this turn** comes from git (`git diff --stat`), summarized to
+- **Changed this turn** comes from git (`git diff --stat`, plus untracked
+  task files from `git status --short`, which diff omits), summarized to
   counts and areas — never a hand-written file list.
 - **Deviations** ≠ "none" requires one line below the table naming the
   file/step and the justification. Blocked/needs-decision status requires a
@@ -68,8 +68,8 @@ colleague who saw none of the conversation.
 <deviations that survived (with justification), known limitations, follow-ups>
 ```
 
-Honest limitation of inline reporting: per-turn telemetry is no longer
-persisted, so pipeline stats at close are best-effort (phase-boundary commits,
-gate verdicts, and main.yaml's git history reconstruct most of it). If tuning
-decisions start needing harder numbers, the escalation is resuming file-based
-telemetry — see TUNING.md.
+Known limitation: per-turn telemetry is not persisted, so pipeline stats at
+close are best-effort — phase-boundary commits, quoted gate verdicts, and
+main.yaml's git history reconstruct most of it. If tuning decisions need
+harder numbers, the escalation is file-based telemetry (see the kit's
+TUNING.md).

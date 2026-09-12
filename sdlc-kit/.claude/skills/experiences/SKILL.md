@@ -1,12 +1,20 @@
 ---
 name: experiences
-description: Create and maintain experience memory entries under docs/experiences/ — durable lessons learned. Invoke at task close, after any notable failure or surprising discovery, when a design choice gets validated or invalidated by evidence, or when the human says "remember this", "we've hit this before", or "write this down". Writing only — reading/searching entries is ambient (see CLAUDE.md read protocol) and needs no skill.
+description: Write or update a durable lesson under docs/experiences/. Use at task close, after a costly failure or surprising discovery, when evidence validates or invalidates a design choice, or when the human says "remember this" / "write this down". Writing only — reading is ambient via the CLAUDE.md experience routing.
 ---
 
 # Experience Memory — Writer
 
-One markdown file per lesson. The frontmatter IS the retrieval index (readers
-grep it), so its quality determines whether the entry is ever found again.
+One markdown file per lesson. The frontmatter IS the retrieval index
+(`exp_search` and grep read it), so its quality decides whether the entry is
+ever found again.
+
+## Before Writing
+
+Run `exp_search` with the lesson's own tags, symptom, and keywords — the
+routing at task start searched for the *task*, not for this finding. A hit
+whose Use-When covers the finding is updated in place (Evidence, confidence,
+source-task), never duplicated.
 
 ## When to Write
 
@@ -15,9 +23,8 @@ Write when any of these hold:
 - A design choice was validated or invalidated by evidence (gate results count).
 - A surprising behavior of a library, tool, or this codebase was confirmed.
 
-Do NOT write for: one-off typos, restatements of official docs, or anything an
-existing entry covers — update that entry's Evidence/confidence instead. Ten
-sharp entries beat a hundred journal notes.
+Do NOT write for one-off typos, restatements of official docs, or anything an
+existing entry covers. Ten sharp entries beat a hundred journal notes.
 
 ## File Format — `docs/experiences/<slug>.md`
 
@@ -49,13 +56,14 @@ paragraph max — this is the payload.>
 <Boundary of validity — the guard against over-applying the lesson.>
 ```
 
-Quality bar for `use-when`: a concrete "use when..." trigger sentence — it is
-the PRIMARY discovery surface (CLAUDE.md routes tasks by matching against it),
-so write it as the situation a future task would be in, not as a topic label.
-
-Quality bar for `symptom`: the exact phrase future-you would grep when hitting
-the problem cold — an error-message fragment or observed misbehavior, not an
-abstract summary.
+Quality bars:
+- `use-when`: a concrete "use when ..." trigger sentence — the PRIMARY
+  discovery surface (routing confirms candidates against it). Write the
+  situation a future task would be in, not a topic label.
+- `symptom`: the exact phrase future-you would grep when hitting the problem
+  cold — an error-message fragment or observed misbehavior, not a summary.
+- `tags`: reuse tags already in `exp_inventory` before coining new ones — a
+  synonym tag splits the corpus and hides the entry from routing.
 
 ## Lifecycle
 

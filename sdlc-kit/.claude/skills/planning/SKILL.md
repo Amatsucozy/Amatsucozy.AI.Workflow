@@ -1,7 +1,6 @@
 ---
 name: planning
-description: >
-  Design-stage standards for the orchestrator when writing work plans and verification plans. Use in plan mode after research completes and before any engineer dispatch — whenever drafting, revising, or splitting an implementation plan, and whenever defining verification gates. Governs docs/tasks/<id>/work-plan.md and verification-plan.md; the two are always written together.
+description: Work-plan and verification-plan standards for the SDLC pipeline. Use in plan mode after research.md exists and before any engineer dispatch — when drafting, revising, or splitting phases, or defining verification gates. Governs docs/tasks/<id>/work-plan.md and verification-plan.md, always written as a pair.
 ---
 
 # Planning Standards
@@ -92,6 +91,9 @@ Rules:
 - **Every gate row has an On-fail action** (fix-forward scope, or rollback to
   phase-commit SHA). A gate that fails without a defined response stalls the
   pipeline.
+- **Gate commands are the capped skills.** Build rows invoke `run-build`,
+  test rows invoke `run-test` (`no_build=true` right after a successful
+  build) — never raw `dotnet` commands; the reviewer runs the row as written.
 
 ## Approval
 

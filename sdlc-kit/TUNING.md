@@ -14,7 +14,7 @@ an experiences entry (domain: process).
 | Gate count default | 2 (mid + final) | skills/planning | build cost dominates | PARTIAL/FAIL verdicts cluster at G-final with root causes in early phases → add earlier gate |
 | PR review size cap | ~1500 changed lines | agents/pr-reviewer.md | responsible-review ceiling | honest-partials are frequent on normal team PRs |
 | Nit cap per review | "a handful" | agents/pr-reviewer.md | anti-noise | colleagues report reviews feel nitpicky or toothless |
-| Orchestrator skill length | ~150 lines | skills/sdlc-orchestrator | instruction-following degrades past this | rules demonstrably ignored → cut or promote to output style. NOTE: dispatch-enforcement patch grew the skill — run `wc -l` and either raise this number here or promote before the next ticket; an unexamined breach makes the row a fiction |
+| Orchestrator skill length | ~150 lines target; 184 actual (2026-09-12) | skills/sdlc-orchestrator | instruction-following degrades past this | rules demonstrably ignored → cut or promote to output style. Examined 2026-09-12: the skill-optimization pass cut 211 → 184 lines by removing repetition only; every remaining line is a rule from the dispatch-enforcement or rehydration rows, so the next cut is a promotion (output style / CLAUDE.md), not a trim |
 | Dispatch routing enforcement | hard prohibitions + artifact gates (all three roles) | agents/researcher.md, agents/reviewer.md, agents/engineer.md, skills/sdlc-orchestrator | week-one evidence: procedure-phrased steps alone did not route researcher/reviewer work to subagents; enforcement shape upgraded per the erosion rule | gates never fire across 10+ tickets AND transcripts show routing held without them → soften back to procedure language (mechanical enforcement must keep earning its place, both directions) |
 | Fresh-session rehydration | mandatory batched read at resume: main.yaml, ticket, work-plan (Strategy + phase under review + fix-phases), gate, research | skills/sdlc-orchestrator On Invocation §1 | a fresh session holds none of the plan's context; approved Strategy stays binding across sessions | rehydrated documents routinely go unused in the resumed session's decisions → trim the read set; or resumed fixes still depart from Strategy → the read isn't the problem, the binding language is |
 | `ready` status value | DEFERRED — not added to main.yaml status enum | (would live in skills/requirements, skills/sdlc-orchestrator step 1) | intake/execution session split under evaluation; adding a status before the leak is observed is speculative guardrail | a draft ticket (open questions, non-binary AC) reaches research or plan mode in a dev session → add `ready` + audit-or-bounce guard in orchestrator step 1 |
@@ -59,8 +59,9 @@ strike each line once resolved (update the row, note the date).
   (scope fence too wide to hold in one dispatch)?
 - **main.yaml staleness:** any resume where main.yaml's phase disagreed with
   the last phase commit? (Resolves the CONFIRM marker in the discipline row.)
-- **Orchestrator line count:** current `wc -l` vs ~150. (Resolves the NOTE in
-  the length row.)
+- ~~**Orchestrator line count:** current `wc -l` vs ~150.~~ Examined
+  2026-09-12: 184 lines after the optimization pass; the length row now
+  carries the actual count and the promotion-not-trim reversal signal.
 - **amtcz manual inlining:** did wrong-command/wrong-flag incidents actually
   drop after CLAUDE.md absorbed the full manual, relative to the skill-based
   baseline? Check engineer/reviewer dispatch transcripts and researcher
