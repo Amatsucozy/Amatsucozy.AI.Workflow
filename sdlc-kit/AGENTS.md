@@ -41,29 +41,44 @@ intake still lacks a defined problem. Repeat searches when a new failure
 introduces different symptoms; reuse confirmed matches within the same task.
 
 1. State the problem in one sentence, using the request and available context.
-   Ask only if the missing information prevents identifying the task.
+   Ask only if the missing information prevents identifying the task. Then
+   name the task's concerns: `implementation` always, and `tests` whenever
+   the work adds, changes, or fixes tests — an AC names tests, a test file
+   is in scope, or a test is what failed. Route each concern separately: a
+   single pass on the implementation problem retrieves no test lessons.
 2. Call `exp_inventory` before choosing tags (`root` defaults to `.`; pass the
    target project root if necessary). This inventory is required even when
    confident about the likely lesson. `verdict == "no_entries"` means there
    are no entries to search; proceed with a fresh investigation.
-3. Derive 2–4 terms from the task and inventory: technologies, error fragments,
-   and domain concepts. Prefer existing tags over invented synonyms. `symptom`
-   and `keyword` are free text and need not appear in the inventory.
-4. Call `exp_search` with the applicable `tag` / `symptom` / `keyword` filters
-   together. `tag` and `keyword` are lists; `symptom` is a string. Confirm
-   candidates against the report's Use-When column. Tag overlap or a filename
+3. Derive 2–4 terms per concern from the task and inventory: technologies,
+   error fragments, and domain concepts — for `tests`, the test framework,
+   mocking and assertion libraries, fixture and naming patterns, and the
+   `test`-family tags the inventory shows. Prefer existing tags over invented
+   synonyms. `symptom` and `keyword` are free text and need not appear in
+   the inventory.
+4. Call `exp_search` once per concern with that concern's `tag` / `symptom` /
+   `keyword` filters together (a mixed call ranks by tag weight under a
+   `max_rows` cap, so the larger concern crowds out the smaller). `tag` and
+   `keyword` are lists; `symptom` is a string. Confirm candidates against the
+   report's Use-When column — for `tests`, the situation is writing or fixing
+   the tests, not changing the code under test. Tag overlap or a filename
    alone does not establish relevance.
 5. Read confirmed matches, most specific first, and apply relevant guidance
    before new investigation or edits. If none fits, proceed without loading
    unrelated lessons. Cite the slug when relying on or overriding a lesson.
+   Declare the outcome per concern — matched slugs, or "no experience match
+   (tests)"; a `tests` concern with no declaration has not finished routing.
 6. Use the applicable installed skills for the task. At close, use
    [experiences](.agents/skills/experiences/SKILL.md) if an evidence-backed
    finding would help future work; update an existing lesson when it already
    covers the finding.
 7. When delegating, attach confirmed entries' Lesson and Applies When/Not When
-   sections with their slugs. Do not assume the child inherited the parent's
-   searches, file reads, or MCP availability. A worker reports a missing
-   required capability to the parent without claiming the check ran.
+   sections with their slugs, matched to the delegate's concern: a phase that
+   writes or fixes tests carries the `tests` lessons, an implementation phase
+   the `implementation` ones, a phase doing both carries both. Do not assume
+   the child inherited the parent's searches, file reads, or MCP
+   availability. A worker reports a missing required capability to the
+   parent without claiming the check ran.
 
 If the experience tools are unavailable, inspect the local entries with `rg`:
 first inventory their `tags:` fields, then search tags, `symptom:`, and

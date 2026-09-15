@@ -64,6 +64,12 @@ Quality bar for `symptom`: the exact phrase future-you would grep when hitting
 the problem cold — an error-message fragment or observed misbehavior, not an
 abstract summary.
 
+Quality bar for test lessons: the routing's `tests` concern finds them by
+test framework, mocking/assertion libraries, and fixture or naming patterns —
+tag and phrase `use-when` that way (`xunit`, `mocking`, `test-fixtures`; "use
+when writing xunit tests for a scoped EF Core service"), not only by the
+production type under test.
+
 ## Lifecycle
 
 - `observed-once` → `proven` when a second task confirms it (append the second

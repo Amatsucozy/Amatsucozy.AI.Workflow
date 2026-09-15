@@ -75,7 +75,11 @@ main.yaml at intake) skip this. Everything else:
 
    Dispatch `researcher` per main.yaml's `research` field — set at intake,
    never re-derived here:
-   - `full` → Problem + Target; normal traversal.
+   - `full` → Problem + Target; normal traversal. When the task has a
+     `tests` concern (CLAUDE.md routing step 1), the topic also names the
+     existing tests of the target members and their test project, so the
+     test phase gets anchors — framework, fixture helpers, naming —
+     instead of an engineer's guess.
    - `pinpointed` → Confirm Mode: `mode: confirm` plus the ticket's cited
      file/line/issue rows verbatim. The researcher still runs — pinpointed
      narrows its traversal, it does not remove the subagent boundary, and the
@@ -85,8 +89,12 @@ main.yaml at intake) skip this. Everything else:
    Mode brief flagging misclassification → one narrower or full second pass
    before planning. Follow-ups attach the parent's map and scope the delta.
 3. **Design (plan mode).** No `research.md` on disk, no plan mode. Run the
-   CLAUDE.md experience routing; cite slugs in Strategy, including overridden
-   ones. Draft work + verification plans per the `planning` skill and get
+   CLAUDE.md experience routing once per concern — `implementation`, and
+   `tests` whenever an AC or a drafted phase adds, changes, or fixes tests.
+   Cite slugs in Strategy per concern, including overridden ones, or the
+   mandatory "no experience match (tests)"; a plan with a test phase and no
+   `tests`-concern search is not ready for approval. Draft work +
+   verification plans per the `planning` skill and get
    explicit human approval. Immediately on approval — before leaving plan
    mode or dispatching anything — write `work-plan.md` and
    `verification-plan.md` to disk and set main.yaml `approved: <date>`. The
@@ -97,8 +105,10 @@ main.yaml at intake) skip this. Everything else:
    the task — stop and surface, never silently re-branch. Dispatch each
    phase to its plan-named executor (`engineer` by default). Every dispatch
    carries: ticket, current phase only, exact file scope, done-when, prior
-   handoff notes, confirmed-relevant experience lessons (subagents don't
-   search experiences), and the pipeline contracts — scope fence, no
+   handoff notes, the experience lessons confirmed for the phase's concern
+   (subagents don't search experiences; a test phase gets the `tests`
+   lessons and its Conventions line, not only the implementation ones), and
+   the pipeline contracts — scope fence, no
    builds/tests, roslyn `diagnostics` on every changed .cs before handoff,
    report deviations (specialist prompts don't know them). One phase at a
    time; commit each boundary: `<id>: phase N — <name>`.
@@ -108,8 +118,9 @@ main.yaml at intake) skip this. Everything else:
    via `run-build`/`run-test` and returns the verdict with their report
    tables. On FAIL or PARTIAL — reported by the reviewer or the human:
    - Run the CLAUDE.md experience routing with the error fragments as
-     `symptom`/`keyword` terms. Cite matched slugs, or state "no experience
-     match" — the negative declaration is mandatory.
+     `symptom`/`keyword` terms; a failing test, or a fix that touches tests,
+     also re-runs the `tests` concern. Cite matched slugs, or state "no
+     experience match" per concern — the negative declaration is mandatory.
    - Reason from the failure table and the diff. If locating the cause needs
      source reading, dispatch `researcher` with the error rows as the topic;
      its Locations table is the evidence, main-thread exploration is not.
