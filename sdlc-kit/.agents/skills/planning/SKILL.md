@@ -20,10 +20,15 @@ Plans carry no frontmatter — documents are content, task state lives in
 <2–4 sentences: the chosen approach, and the rejected alternative with one
 sentence on why — engineers who don't know why an option lost drift back into it.>
 
+Experience: implementation — <slugs, or none>; tests — <slugs, none, or n/a
+(no phase adds or changes tests)>
+
 ## Phase 1 — <name>
 Goal: <one sentence — what is true at phase end>
 Executor: engineer | <specialist agent from installed setup>
 Scope: <exact file list — this becomes the executor's fence>
+Conventions: <test phases only — framework, naming pattern, and the
+fixture/builder helpers to reuse, each anchored to an existing test file>
 
 | Step | Action | File | Anchor | Done-when |
 |---|---|---|---|---|
@@ -41,6 +46,20 @@ Rules:
   plan does not carry a `based-on` pointer.
 - **Phase = dispatch unit.** Size each phase so its prompt (ticket + phase +
   scope) is self-contained; the engineer cannot ask follow-ups.
+- **Experience is cited per concern.** The Strategy's Experience line names
+  the confirmed slugs for `implementation` and for `tests` separately, from
+  the AGENTS.md experience routing run once per concern. "none" declares that
+  the search ran and found nothing; "n/a" that no phase touches tests. A
+  plan with a test phase and an empty or missing `tests` entry is not ready
+  for approval — the engineer will otherwise write tests from the
+  implementation lessons alone.
+- **Test phases carry their conventions.** A phase whose Scope adds or
+  changes test files fills its `Conventions:` line — framework, naming
+  pattern, and the fixture/builder helpers to reuse — each anchored to an
+  existing test file from research and to the `tests` slugs in Strategy.
+  "Add tests for X" alone makes the engineer invent a style, and the
+  resulting inconsistency is a review finding no gate catches. Non-test
+  phases omit the line.
 - **Name the executor per phase.** Default `engineer`; choose a specialist
   agent from the installed setup when the phase's work matches its speciality
   (e.g. dotnet test generation → the test-generator agent). One executor per
@@ -72,7 +91,8 @@ sprinkled per step — this is the entire reason the two plans are separate file
 | G2 (final) | last phase | full | full suite + all ACs | ~N min |
 
 ## Zero-Cost Checks (any time, no build)
-<lint on changed files; diff matches scope; no secrets in diff>
+<lint on changed files; diff matches scope; no secrets in diff; new or
+changed tests match their phase's Conventions line>
 
 ## Gate G<n>
 | Check | Command | Pass condition | On fail |

@@ -64,14 +64,22 @@ For a problem reported against prior work:
 
 After intake establishes the problem, discover and call `exp_inventory`,
 then derive search terms from its tags and the task's error fragments.
+Route each concern separately: `implementation` always, and `tests`
+whenever the work adds, changes, or fixes tests — derive test-framework,
+fixture, and assertion terms for it and run its own `exp_search`; a single
+search on the implementation problem retrieves no test lessons.
 Use `exp_search` with relevant tag, symptom, and keyword parameters from its
 schema. Confirm candidates against `use-when`, then read only matches.
 If those tools are unavailable, use `rg` over `docs/experiences/` frontmatter
 and read matching entries. No directory or no confirmed entries means no
-experience match. Cite matched or deliberately overridden slugs in Strategy.
-Repeat for verification failures with the new error fragments; state
-"no experience match" when none applies. Attach each confirmed lesson's
-Lesson and Applies When/Not When sections to relevant worker prompts.
+experience match. Cite matched or deliberately overridden slugs in Strategy
+per concern; a plan with a test phase and no stated `tests`-concern result
+is not ready for approval. Repeat for verification failures with the new
+error fragments (a failing test also re-runs the `tests` concern); state
+"no experience match" per concern when none applies. Attach each confirmed
+lesson's Lesson and Applies When/Not When sections to the worker prompts
+whose concern it matches — a test phase carries the `tests` lessons and its
+Conventions line.
 
 ## Workflow
 
@@ -89,7 +97,9 @@ hatch. Full tasks use the following stages.
    conventions or `feature/<id>` / `bugfix/<id>` if none exist. Use an
    installed branching skill only if available and applicable. Stop only
    when a conflict cannot be safely resolved within existing authorization.
-   Dispatch researcher with Problem and Target. For `research: pinpointed`,
+   Dispatch researcher with Problem and Target; when tests are in scope, the
+   topic also names the existing tests of the target members and their test
+   project, so the test phase gets anchors. For `research: pinpointed`,
    add `mode: confirm` and verbatim diagnostic rows for every AC. Save its
    brief to research.md. Gaps or misclassification warrant a focused second
    pass before planning. Follow-ups attach the parent map and scope the delta.
@@ -100,7 +110,8 @@ hatch. Full tasks use the following stages.
    Later scope or strategy changes must be visible as plan diffs.
 4. **Implement.** Confirm the task branch. Dispatch one phase at a time to
    its named executor, engineer by default. Include ticket, current phase,
-   exact scope, done-when, prior handoff, relevant lessons, and contracts:
+   exact scope, done-when, prior handoff, the lessons matched to the phase's
+   concern, and contracts:
    no scope creep, no builds/tests, Roslyn diagnostics for each changed .cs
    file, and explicit deviations. Commit only task files at each coherent
    boundary with `<id>: phase N — <name>`. If commits are disallowed, report

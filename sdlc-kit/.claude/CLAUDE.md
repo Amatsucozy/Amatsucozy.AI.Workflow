@@ -39,25 +39,42 @@ intake still lacks a defined problem. Repeat searches when a new failure
 introduces different symptoms; reuse confirmed matches within the same task.
 
 1. State the problem in one sentence, using the request and available context.
-   Ask only if the missing information prevents identifying the task.
+   Ask only if the missing information prevents identifying the task. Then
+   name the task's concerns: `implementation` always, and `tests` whenever
+   the work adds, changes, or fixes tests — an AC names tests, a test file
+   is in scope, or a test is what failed. Each concern is routed separately
+   from here on: test lessons are tagged by framework, fixture, and
+   assertion vocabulary that an implementation problem statement never
+   yields, so a single pass on "the problem" retrieves implementation
+   lessons and silently skips the test ones.
 2. Call `exp_inventory` before choosing tags (`root` defaults to `.`; pass the
    target project root if necessary). This inventory is required even when
    confident about the likely lesson — a tag you invented to fit the task
    sounds no less plausible than one grounded in the corpus, so self-assessed
    confidence never catches the miss. `verdict == "no_entries"` means there
    are no entries to search; proceed with a fresh investigation.
-3. Derive 2–4 terms from the task and inventory: technologies, error fragments,
-   and domain concepts. Prefer existing tags over invented synonyms (inventory
-   shows `dependency-injection`, not your first-instinct `di`). `symptom` and
-   `keyword` are free text and need not appear in the inventory.
-4. Call `exp_search` once with the applicable `tag` / `symptom` / `keyword`
-   filters together. `tag` and `keyword` are lists; `symptom` is a string.
-   Confirm candidates against the report's Use-When column: an entry matches
-   only if Use-When describes the situation you are in. Tag overlap, a high
-   match count, or a filename alone does not establish relevance.
+3. Derive 2–4 terms per concern from the task and inventory: technologies,
+   error fragments, and domain concepts — for `tests`, the test framework,
+   the mocking and assertion libraries, fixture and naming patterns, and the
+   `test`-family tags the inventory shows. Prefer existing tags over invented
+   synonyms (inventory shows `dependency-injection`, not your first-instinct
+   `di`). `symptom` and `keyword` are free text and need not appear in the
+   inventory.
+4. Call `exp_search` once per concern with that concern's applicable `tag` /
+   `symptom` / `keyword` filters together (one mixed call ranks by tag
+   weight under a `max_rows` cap, so the larger concern crowds out the
+   smaller). `tag` and `keyword` are lists; `symptom` is a string. Confirm
+   candidates against the report's Use-When column: an entry matches only
+   if Use-When describes the situation you are in — for `tests`, that
+   situation is writing or fixing the tests, not changing the code under
+   test. Tag overlap, a high match count, or a filename alone does not
+   establish relevance.
 5. Read confirmed matches, most specific first, and apply relevant guidance
    before new investigation or edits. If none fits, proceed without loading
    unrelated lessons. Cite the slug when relying on or overriding a lesson.
+   Declare the outcome per concern — matched slugs, or "no experience match
+   (tests)"; a task with a `tests` concern and no `tests` declaration has
+   not finished routing.
 6. Use the applicable installed skills for the task — skills compose, so
    loading one does not preclude another. Cite by name any skill you
    considered and deliberately skipped. At close, use
@@ -65,10 +82,13 @@ introduces different symptoms; reuse confirmed matches within the same task.
    would help future work; update an existing lesson when it already covers
    the finding.
 7. When delegating, attach confirmed entries' Lesson and Applies When/Not When
-   sections with their slugs. Attach only confirmed matches, never unconfirmed
-   candidates. A subagent that finds a required capability unavailable reports
-   `blocked` to the parent without claiming the check ran — the degraded-mode
-   decision belongs to the human via the main thread.
+   sections with their slugs, matched to the delegate's concern: a phase that
+   writes or fixes tests carries the `tests` lessons, an implementation phase
+   the `implementation` ones, a phase doing both carries both. Attach only
+   confirmed matches, never unconfirmed candidates. A subagent that finds a
+   required capability unavailable reports `blocked` to the parent without
+   claiming the check ran — the degraded-mode decision belongs to the human
+   via the main thread.
 
 If the experience tools are unavailable, inspect the local entries with Grep:
 first inventory their `tags:` fields, then search tags, `symptom:`, and
