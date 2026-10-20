@@ -38,8 +38,9 @@ for why. [`sdlc-kit/AGENTS.md`](sdlc-kit/AGENTS.md) is its Codex counterpart.
 
 [`sdlc-kit/.devin/`](sdlc-kit/.devin) mirrors the four agents for Devin: same
 prose contracts, Devin-shaped frontmatter (`allowed-tools`, Devin model ids).
-The Claude and Devin agent bodies are kept identical; only the frontmatter
-differs.
+The Claude and Devin agent bodies are kept identical except the
+`researcher`, where Devin's natural-language `code_search` adds a discovery
+step ahead of Grep; structure and output contract match.
 
 ## MCP servers
 
