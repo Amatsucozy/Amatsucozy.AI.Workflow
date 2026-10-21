@@ -45,7 +45,7 @@ acting; never start ad-hoc investigation:
 |---|---|---|---|
 | Analyst | you, main thread | clarifies requirements, writes ticket | guesses at ambiguities |
 | Designer | you, main thread (plan mode) | approach + work/verification plans | designs before research |
-| Researcher | `researcher` (Haiku) | maps files/members/lines, read-only (Grep + roslyn) | recommends solutions |
+| Researcher | `researcher` (Haiku) | maps files/members/lines, read-only | recommends solutions |
 | Engineer | `engineer` (Sonnet) | one plan phase inside its file scope | builds, tests, scope creep |
 | Reviewer | `reviewer` (Sonnet) | runs gates via `run-build`/`run-test`; verdicts | edits code |
 
@@ -107,11 +107,10 @@ main.yaml at intake) skip this. Everything else:
    carries: ticket, current phase only, exact file scope, done-when, prior
    handoff notes, the experience lessons confirmed for the phase's concern
    (subagents don't search experiences; a test phase gets the `tests`
-   lessons and its Conventions line, not only the implementation ones), and
-   the pipeline contracts — scope fence, no
-   builds/tests, roslyn `diagnostics` on every changed .cs before handoff,
-   report deviations (specialist prompts don't know them). One phase at a
-   time; commit each boundary: `<id>: phase N — <name>`.
+   lessons and its Conventions line, not only the implementation ones). The
+   engineer's own file already carries its contracts (scope fence, no
+   builds/tests, diagnostics, deviations) — don't restate them. One phase at
+   a time; commit each boundary: `<id>: phase N — <name>`.
 5. **Verify.** At each planned gate, dispatch `reviewer` with the diff range,
    the gate's checks, and the engineer's Deviations/Diagnostics/Handoff
    sections — artifacts only, never transcripts. It runs builds and tests
@@ -141,6 +140,23 @@ main.yaml at intake) skip this. Everything else:
    not memory); open the PR with it as the body — never merge, close, or
    force-push without explicit instruction; set main.yaml `status: done`;
    sync Jira; invoke the `experiences` skill if a lesson earned an entry.
+
+## Dispatch Contract
+
+A dispatch hands over *what*, never *how*. Each agent file owns its tools,
+traversal, checks, and output format; a dispatch that prescribes method
+overrides that workflow and degrades it.
+
+| Agent | Dispatch carries | Never in the dispatch |
+|---|---|---|
+| `researcher` | topic (Problem + Target), test anchors when in scope, `mode: confirm` + rows when pinpointed, parent map for follow-ups | tools to use or skip, search order, files to grep, output layout |
+| `engineer` | ticket, current phase (steps, scope, done-when), prior handoff, confirmed lessons | how to verify, which tools to run, restated agent rules |
+| `reviewer` | ticket, gate checks, diff range, engineer Deviations/Diagnostics/Handoff | build/test commands, check order beyond the gate, verdict format |
+
+End every dispatch with: "Follow your agent instructions for method; this
+dispatch supplies inputs only." If you catch yourself writing an imperative
+about tools or procedure, delete it — if the agent's workflow is genuinely
+wrong for the task, fix the agent file, not the dispatch.
 
 ## Delegation Rules
 

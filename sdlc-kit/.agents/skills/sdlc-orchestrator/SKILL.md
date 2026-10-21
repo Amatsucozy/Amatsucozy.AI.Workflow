@@ -110,10 +110,9 @@ hatch. Full tasks use the following stages.
    Later scope or strategy changes must be visible as plan diffs.
 4. **Implement.** Confirm the task branch. Dispatch one phase at a time to
    its named executor, engineer by default. Include ticket, current phase,
-   exact scope, done-when, prior handoff, the lessons matched to the phase's
-   concern, and contracts:
-   no scope creep, no builds/tests, Roslyn diagnostics for each changed .cs
-   file, and explicit deviations. Commit only task files at each coherent
+   exact scope, done-when, prior handoff, and the lessons matched to the
+   phase's concern. The engineer's own file carries its contracts — don't
+   restate them. Commit only task files at each coherent
    boundary with `<id>: phase N — <name>`. If commits are disallowed, report
    the missing checkpoint and keep `head` at its last actual commit.
 5. **Verify.** Dispatch a fresh reviewer with diff range, gate checks, and
@@ -138,6 +137,23 @@ hatch. Full tasks use the following stages.
    approval. Never merge, close, or force-push without explicit instruction.
    Mark main.yaml done for completed implementation/verification and report
    pending publication separately. Use `experiences` if a lesson merits it.
+
+## Dispatch Contract
+
+A dispatch hands over *what*, never *how*. Each agent file owns its tools,
+traversal, checks, and output format; a dispatch that prescribes method
+overrides that workflow and degrades it.
+
+| Agent | Dispatch carries | Never in the dispatch |
+|---|---|---|
+| researcher | topic (Problem + Target), test anchors when in scope, `mode: confirm` + rows when pinpointed, parent map for follow-ups | tools to use or skip, search order, files to grep, output layout |
+| engineer | ticket, current phase (steps, scope, done-when), prior handoff, confirmed lessons | how to verify, which tools to run, restated agent rules |
+| reviewer | ticket, gate checks, diff range, engineer Deviations/Diagnostics/Handoff | build/test commands, check order beyond the gate, verdict format |
+
+End every dispatch with: "Follow your agent instructions for method; this
+dispatch supplies inputs only." If you catch yourself writing an imperative
+about tools or procedure, delete it — if the agent's workflow is genuinely
+wrong for the task, fix the agent file, not the dispatch.
 
 ## Delegation and Verification Boundaries
 
