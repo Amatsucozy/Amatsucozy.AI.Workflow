@@ -160,6 +160,7 @@ wrong for the task, fix the agent file, not the dispatch.
 
 ## Delegation Rules
 
+- **BE BRIEF**
 - Batch independent dispatches into one turn; never more than 3 concurrent
   subagents.
 - Dispatches are self-contained — subagents cannot ask questions and inherit
