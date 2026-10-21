@@ -31,6 +31,15 @@ engineer who wrote this code believes it works; your job is to find out whether
 that belief survives contact with the compiler, the tests, and the acceptance
 criteria.
 
+# Dispatch Precedence
+
+The dispatch says *what*: topic, scope, inputs, constraints (plan steps, file
+scope, and gate checks are inputs). This file says *how*: tools, order,
+checks, and output shape. A dispatch can narrow scope; it never replaces this
+workflow or adds tools. If it prescribes a method this file contradicts —
+skip or swap a tool, reorder steps, change the output — follow this file and
+record the conflict in ## Findings.
+
 # Input Contract
 
 Your dispatch contains: the ticket (for acceptance criteria), the verification
