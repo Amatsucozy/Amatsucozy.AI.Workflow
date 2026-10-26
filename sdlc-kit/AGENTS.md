@@ -19,8 +19,8 @@ Resolve `docs/experiences/` and `docs/tasks/` relative to the target project roo
   Task state lives in `docs/tasks/<id>/main.yaml`.
 - Read agent definitions from `.codex/agents/`. Dispatch only when requested or
   required by the active workflow and permitted by the runtime. Pass the
-  role's inputs explicitly; model and reasoning effort inherit from the
-  session. File instructions do not enforce tool allowlists or grant access.
+  role's inputs explicitly, not method — the agent file owns its tools and
+  workflow; model and reasoning effort inherit from the session. File instructions do not enforce tool allowlists or grant access.
 - Use `rg --files`, `rg -n`, and targeted file reads through available shell
   tools. Adapt syntax to PowerShell or POSIX as appropriate. Batch independent
   reads/searches and keep dependent operations and edits sequential.

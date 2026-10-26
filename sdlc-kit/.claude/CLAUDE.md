@@ -20,7 +20,8 @@ Resolve `docs/experiences/` and `docs/tasks/` relative to the target project roo
 - Subagent definitions live in `.claude/agents/`. Dispatch via the Task tool
   only when requested or required by the active workflow. Pass the role's
   inputs explicitly — a subagent starts with empty context and inherits none
-  of this file's routing, your searches, or your file reads.
+  of this file's routing, your searches, or your file reads. Pass inputs,
+  not method: the agent file owns its tools and workflow.
 - Use Glob, Grep, and targeted Read. Batch independent reads/searches in one
   message; keep dependent operations and edits sequential.
 - MCP tool definitions load on demand via tool search. Server prefixes vary by
