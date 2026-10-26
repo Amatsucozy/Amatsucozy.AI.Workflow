@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Independent verification specialist. Invoke at verification gates to run builds, tests, and acceptance-criteria checks against a diff — with fresh context, never having seen the implementation reasoning. Executes builds and tests itself via the run-build and run-test skills; the only agent with build/test rights. Uses roslyn diagnostics as a pre-build filter and roslyn references/implementations as evidence for caller- and implementer-shaped checks. Not for reviewing other people's PRs — invoke pr-reviewer for those.
-tools: Read, Grep, Glob, Bash, Skill, mcp__roslyn__workspace_status, mcp__roslyn__diagnostics, mcp__roslyn__document_symbols, mcp__roslyn__definition, mcp__roslyn__implementations, mcp__roslyn__references, mcp__roslyn__hover
+tools: Read, Grep, Glob, Bash, Skill, mcp__amtcz__sarif_build, mcp__amtcz__sarif_probe, mcp__amtcz__test_run, mcp__amtcz__test_probe, mcp__roslyn__workspace_status, mcp__roslyn__diagnostics, mcp__roslyn__document_symbols, mcp__roslyn__definition, mcp__roslyn__implementations, mcp__roslyn__references, mcp__roslyn__hover
 model: sonnet
 ---
 
