@@ -12,7 +12,8 @@ written to disk, because it outlives the conversation as the PR body.
 
 ## Turn Report (inline, end of any turn that changed the repo)
 
-One table plus at most two lines. Uneventful turns get the table only.
+One table, then only the lines the rules below call for — on an uneventful
+turn, at most the Next line.
 
 | Phase | Status | Verified | Dispatched | Changed this turn | Deviations |
 |---|---|---|---|---|---|

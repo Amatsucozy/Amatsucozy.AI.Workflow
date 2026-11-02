@@ -63,9 +63,10 @@ Rules:
 - **Name the executor per phase.** Default `engineer`; choose a specialist
   agent from the installed setup when the phase's work matches its speciality
   (e.g. dotnet test generation → the test-generator agent). One executor per
-  phase — if a phase seems to need two, it is two phases. The pipeline
-  contracts (scope fence, no builds, deviation reporting) travel in the
-  dispatch prompt regardless of executor.
+  phase — if a phase seems to need two, it is two phases. The `engineer`
+  file carries the pipeline contracts (scope fence, no builds, deviation
+  reporting), so its dispatch doesn't restate them; a specialist executor
+  whose own file lacks them receives them in its dispatch.
 - **Prefer fewer, fatter phases.** Every phase is a fresh subagent bootstrap —
   new context, new cache writes, its own rate-limit footprint. Split phases
   for rollback boundaries and scope fences, never for tidiness; if two phases

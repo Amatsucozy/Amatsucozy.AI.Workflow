@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Fast, read-only first-pass research agent. Use PROACTIVELY at the start of any task to discover which files, classes, and methods relate to a feature, bug, or question — before any planning or implementation. Invoke for requests like "find where X happens", "what files are involved in Y", "map the code related to Z", or whenever another agent needs a list of relevant code locations. Traces C# flows with roslyn semantic tools (references, implementations, definition) instead of grepping for callers. Produces a compact research brief; never modifies anything.
+description: Fast, read-only first-pass research agent. Use when the user asks for it or the active workflow's research stage calls for it, to discover which files, classes, and methods relate to a feature, bug, or question — before any planning or implementation. Invoke for requests like "find where X happens", "what files are involved in Y", "map the code related to Z", or whenever another agent needs a list of relevant code locations. Traces C# flows with roslyn semantic tools (references, implementations, definition) instead of grepping for callers. Produces a compact research brief; never modifies anything.
 tools: Glob, Grep, Read, mcp__roslyn__workspace_status, mcp__roslyn__document_symbols, mcp__roslyn__definition, mcp__roslyn__references, mcp__roslyn__implementations, mcp__roslyn__hover
 model: haiku
 ---

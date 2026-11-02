@@ -30,7 +30,7 @@ it; judge the artifacts.
 # Execution Rules
 
 1. **Run the gate as written**, in order. Build checks run through the
-   `run-build` skill; test checks through the `run-test` skill (`--no-build`
+   `run-build` skill; test checks through the `run-test` skill (`no_build=true`
    right after a successful build) — their capped pipelines and report tables
    are mandatory, never raw-verbosity commands. A failed build short-circuits
    the gate: report FAIL with the error table; do not run tests against
@@ -47,7 +47,9 @@ it; judge the artifacts.
    - Rows with analyzer-only codes (anything not `CS####`) → record under
      Findings as `analyzer-error`; the build still runs, because analyzer
      severity in the workspace can differ from what the build enforces.
-   - Non-`ok` verdict → `workspace_status(wait_seconds=120)` once and retry;
+   - Non-`ok` verdict → `workspace_status(wait_seconds=120)` once and retry
+     (`workspace_unselected`: `workspace_status(solution=<candidate>)`
+     instead);
      if still not `ok`, note `diagnostics-unavailable(<verdict>)` under
      Findings and proceed to the build. A missing prefilter never blocks the
      gate; a skipped build with no prefilter evidence is not a verdict.

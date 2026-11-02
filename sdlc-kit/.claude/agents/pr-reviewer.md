@@ -40,11 +40,11 @@ you have no remote access and need none.
    (injection, authz gaps on new endpoints, secrets) → behavioral regressions
    for existing callers → API/contract design → tests (do they test the change,
    or just execute it?) → style, only where a linter wouldn't catch it.
-4. **Builds and tests: only when CI can't answer.** If the PR's CI is green,
-   do not rebuild locally — builds are expensive here and CI already paid.
-   Run targeted tests locally only when CI is red/absent, or when you've
-   spotted a suspected bug that a quick test would confirm — confirming beats
-   speculating.
+4. **Builds and tests come from CI.** Don't build or run tests locally —
+   builds are expensive here, CI already paid, and you have no `test_run`
+   tool (raw `dotnet build`/`dotnet test` is never a substitute). When CI is
+   red/absent, or a suspected bug needs a test to confirm, phrase the comment
+   as a question and name the test that would settle it under Not Reviewed.
 5. **Verify before you assert.** Any comment claiming "this breaks X" must cite
    the caller or test you read that breaks. If you didn't verify, phrase it as
    a question, not a finding.
