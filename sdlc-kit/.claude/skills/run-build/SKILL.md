@@ -21,9 +21,10 @@ initiative. Scenario table: CLAUDE.md → Reference — amtcz-mcp tools.
 
 1. Target: use the named .sln/.csproj; else Glob `*.sln` at root (single hit
    → use it; multiple → pick by task context and say which).
-2. One tool call:
+2. One tool call (`root` is the target project's root — `"."` only when
+   the shell is already there):
    ```
-   sarif_build(target=<target>, root=".", max_rows=30)
+   sarif_build(target=<target>, root=<project root>, max_rows=30)
    ```
    Verdict contract:
    | verdict | Meaning | Then |
@@ -36,7 +37,7 @@ initiative. Scenario table: CLAUDE.md → Reference — amtcz-mcp tools.
 3. Re-inspection without rebuilding (a larger `max_rows` after truncation, or
    `warnings=true` on request):
    ```
-   sarif_probe(root=".", max_rows=60)
+   sarif_probe(root=<same root>, max_rows=60)
    ```
    Never rebuild just to re-read a report that is already on disk.
 4. On success report elapsed (from the echoed console tail) plus the warning

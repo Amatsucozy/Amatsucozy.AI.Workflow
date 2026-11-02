@@ -19,10 +19,11 @@ initiative. Scenario table: CLAUDE.md → Reference — amtcz-mcp tools.
 
 1. Run exactly the scope given (project, `filter`, or full suite) — never
    widen or narrow it.
-2. One tool call; default `no_build=true` when binaries are fresh (always
-   true right after a successful `sarif_build`):
+2. One tool call (`root` is the target project's root — `"."` only when
+   the shell is already there); default `no_build=true` when binaries are
+   fresh (always true right after a successful `sarif_build`):
    ```
-   test_run(target=<target>, root=".", no_build=true, filter="<expr>", max_rows=25)
+   test_run(target=<target>, root=<project root>, no_build=true, filter="<expr>", max_rows=25)
    ```
    Verdict contract:
    | verdict | Meaning | Then |
@@ -34,7 +35,7 @@ initiative. Scenario table: CLAUDE.md → Reference — amtcz-mcp tools.
    | `dotnet_not_found` | dotnet not on PATH | environment problem; surface to the human |
 3. Re-inspection without rerunning (larger `max_rows` after truncation):
    ```
-   test_probe(root=".", max_rows=60)
+   test_probe(root=<same root>, max_rows=60)
    ```
    Never rerun a suite just to re-read results already on disk.
 
@@ -59,5 +60,6 @@ Truncated: <its line>
 - Never `cat` the console temp file or any .trx — the echoed tail and the
   table are the only test output permitted into context.
 - Facts only — no fixes, no acceptability judgments beyond the counts.
-- Add `TestResults/` to the repo .gitignore if not already there — the TRX
-  results dir lives under the repo root.
+- If `TestResults/` is missing from the repo .gitignore, say so in the
+  report — the TRX results dir lives under the repo root, and adding the
+  entry is a change for the engineer or the human, not this skill.
