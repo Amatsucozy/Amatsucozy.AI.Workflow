@@ -32,7 +32,28 @@ try:  # mcp 2.x
 except ImportError:  # mcp 1.x
     from mcp.server.fastmcp import FastMCP as _Server  # type: ignore[no-redef]
 
-mcp = _Server("dbschema")
+INSTRUCTIONS = """\
+Database schema lookup: structure only, never rows. You write the SQL. Start
+with catalog_info and apply its `hints` (quoting, default schema, row-limit
+syntax, concat operator) to any SQL you write. Find tables with
+schema_search_tables, columns with schema_search_columns, then take the
+column list from schema_describe_table and joins from schema_related_tables
+(use join_on verbatim). catalog_unavailable is a config problem: surface it.
+
+Details:
+- The snapshot is taken once per process. Call catalog_refresh only after a
+  migration ran this session or when results contradict the database; if it
+  still disagrees, suspect the DBSCHEMA_SCHEMAS filter.
+- no_match: try one different domain word, then schema_list_tables.
+- ambiguous / table_ambiguous: re-call with one of `candidates`.
+- not_found: the name is wrong; find the real one before retrying.
+- no_relations may mean the schema declares no FKs: infer join columns from
+  schema_describe_table and label the join as inferred.
+- Keep depth at 1 unless a direct join cannot reach the entity.
+- Credentials are environment-only; no tool takes a connection string.
+"""
+
+mcp = _Server("dbschema", instructions=INSTRUCTIONS)
 
 _index: SchemaIndex | None = None
 _load_error: str | None = None

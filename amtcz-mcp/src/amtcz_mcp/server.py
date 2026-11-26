@@ -17,7 +17,28 @@ from mcp.server.mcpserver import MCPServer
 
 from amtcz_mcp import experiences, sarif, trx
 
-mcp = MCPServer("amtcz")
+INSTRUCTIONS = """\
+.NET build/test runner and experience-memory search. Every result has a
+`verdict`; act on it, never re-derive it from console text. Build with
+sarif_build, test with test_run (no_build=true right after a successful
+build). Truncated table: re-read with sarif_probe / test_probe and a larger
+max_rows instead of rebuilding or rerunning. Infrastructure verdicts
+(no_sarif_logs, gap_msbuild_failure, no_trx, dotnet_not_found): report the
+console tail to the human, no blind retries.
+
+Details:
+- rebuild=true pays a full recompile; use it only on human request (branch
+  switch, removed project, suspected stale logs). Carried logs are valid.
+- zero_discovered means a bad filter or target: fix the invocation once.
+- Never load raw build/test logs, .sarif or .trx files into context; the
+  structured report is the output.
+- Experiences: call exp_inventory first and take search tags from it, then
+  one exp_search per concern (implementation, tests) with tag/symptom/keyword
+  together. A hit is relevant only if its use_when matches your situation;
+  read the file before applying it. no_entries: skip search.
+"""
+
+mcp = MCPServer("amtcz", instructions=INSTRUCTIONS)
 
 
 @mcp.tool()
@@ -140,9 +161,8 @@ def test_probe(
 @mcp.tool()
 def exp_inventory(root: str = ".") -> dict:
     """List the experience-memory tag inventory (docs/experiences/*.md) as
-    tag -> entry-count. This is CLAUDE.md's experience-routing step 1 —
-    always call this before exp_search, so search tags come from the real
-    inventory rather than an invented near-synonym.
+    tag -> entry-count. Call this before exp_search, so search tags come
+    from the real inventory rather than an invented near-synonym.
 
     verdict meanings:
       "no_entries" - docs/experiences/ has zero entries and zero malformed
@@ -163,8 +183,7 @@ def exp_search(
     keyword: list[str] | None = None,
     max_rows: int = 8,
 ) -> dict:
-    """Search experience-memory entries by tag/symptom/keyword (CLAUDE.md
-    experience-routing step 2). At least one of tag, symptom, or keyword is
+    """Search experience-memory entries by tag/symptom/keyword At least one of tag, symptom, or keyword is
     required. Never returns lesson bodies, only each hit's use_when column
     and path, by design — the caller decides which hits actually match their
     situation (via use_when) before reading the full file at path, rather

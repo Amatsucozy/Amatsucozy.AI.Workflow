@@ -124,9 +124,11 @@ Every result carries `verdict`; every snapshot-backed result carries
 `verdict` value's meaning) is visible to the calling agent through MCP tool
 introspection.
 
-For the cross-tool judgment calls that don't belong in any single tool's
-description, merge [`CLAUDE.md.example`](CLAUDE.md.example) into the
-consuming repository's `CLAUDE.md`.
+Cross-tool judgment calls that don't belong in any single tool's description
+ship as the server's MCP `instructions`, which clients such as Claude Code and
+Codex show whenever the server is connected. For a client that doesn't surface
+server instructions, merge [`CLAUDE.md.example`](CLAUDE.md.example) into the
+consuming repository's instruction file instead.
 
 ## Expected agent flow
 

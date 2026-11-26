@@ -42,3 +42,10 @@ def test_exp_inventory_direct_call_returns_plain_dict(tmp_path):
     assert isinstance(result, dict)
     assert not hasattr(result, "__dataclass_fields__")
     assert result["verdict"] == "no_entries"
+
+
+def test_server_publishes_instructions():
+    # Cross-tool guidance travels with the server so every MCP client gets it;
+    # Codex reads the first 512 characters when deciding how to use a server.
+    assert mcp.instructions
+    assert len(mcp.instructions.split("\n\n")[0]) <= 512

@@ -5,28 +5,25 @@ description: Write or update a durable lesson under docs/experiences/. Use at ta
 
 # Experience Memory — Writer
 
-One markdown file per lesson. The frontmatter IS the retrieval index
+One markdown file per lesson. The frontmatter is the retrieval index
 (`exp_search` and grep read it), so its quality decides whether the entry is
 ever found again.
 
-## Before Writing
-
-Run `exp_search` with the lesson's own tags, symptom, and keywords — the
-routing at task start searched for the *task*, not for this finding. A hit
-whose Use-When covers the finding is updated in place (Evidence, confidence,
-source-task), never duplicated.
-
 ## When to Write
 
-Write when any of these hold:
 - A failure cost more than ~30 minutes and had a generalizable cause.
-- A design choice was validated or invalidated by evidence (gate results count).
+- Evidence (gate results count) validated or invalidated a design choice.
 - A surprising behavior of a library, tool, or this codebase was confirmed.
 
-Do NOT write for one-off typos, restatements of official docs, or anything an
-existing entry covers. Ten sharp entries beat a hundred journal notes.
+Skip one-off typos, restatements of official docs, and anything an existing
+entry covers. Ten sharp entries beat a hundred journal notes.
 
-## File Format — `docs/experiences/<slug>.md`
+Before writing, run `exp_search` with the lesson's own tags, symptom, and
+keywords — the routing at task start searched for the task, not this finding.
+A hit whose Use-When covers the finding is updated in place (Evidence,
+confidence, source-task), not duplicated.
+
+## Format — `docs/experiences/<slug>.md`
 
 ```markdown
 ---
@@ -43,36 +40,31 @@ source-task: <ticket id>
 # <Title stating the lesson, not the topic>
 
 ## Situation
-<2–3 sentences: the context in which this arose.>
+<2–3 sentences of context.>
 
 ## Lesson
-<The transferable rule, actionable without re-reading Situation. One strong
-paragraph max — this is the payload.>
+<The transferable rule, actionable without the Situation. One paragraph max.>
 
 ## Evidence
-<What failed, what fixed it, measurement if any; file:line or commit refs.>
+<What failed, what fixed it, measurements; file:line or commit refs.>
 
 ## Applies When / Not When
 <Boundary of validity — the guard against over-applying the lesson.>
 ```
 
-Quality bars:
-- `use-when`: a concrete "use when ..." trigger sentence — the PRIMARY
-  discovery surface (routing confirms candidates against it). Write the
-  situation a future task would be in, not a topic label.
-- `symptom`: the exact phrase future-you would grep when hitting the problem
-  cold — an error-message fragment or observed misbehavior, not a summary.
-- `tags`: reuse tags already in `exp_inventory` before coining new ones — a
-  synonym tag splits the corpus and hides the entry from routing.
-- Test lessons are found by the routing's `tests` concern, which derives its
-  terms from the test framework, mocking/assertion libraries, and fixture or
-  naming patterns — tag and phrase `use-when` that way (`xunit`, `mocking`,
-  `test-fixtures`; "use when writing xunit tests for a scoped EF Core
-  service"), not only by the production type under test.
+- `use-when` is the primary discovery surface: describe the situation a
+  future task would be in, not a topic label.
+- `symptom` is the phrase you'd grep when hitting the problem cold — an error
+  fragment or observed misbehavior.
+- `tags`: reuse tags from `exp_inventory`; a synonym splits the corpus.
+- Test lessons are found by the `tests` concern, which searches by framework,
+  mocking/assertion libraries, and fixture patterns — tag and phrase them that
+  way (`xunit`, `mocking`, `test-fixtures`; "use when writing xunit tests for
+  a scoped EF Core service"), not only by the production type under test.
 
 ## Lifecycle
 
-- `observed-once` → `proven` when a second task confirms it (append the second
+- `observed-once` → `proven` when a second task confirms it (add its
   source-task to Evidence).
-- Contradicted entries are corrected in place with a one-line note of what
-  changed — never silently deleted; the correction is itself a lesson.
+- Correct contradicted entries in place with a one-line note of what changed;
+  don't delete them — the correction is itself a lesson.

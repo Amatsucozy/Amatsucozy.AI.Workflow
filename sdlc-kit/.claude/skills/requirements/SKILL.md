@@ -5,111 +5,86 @@ description: Requirements elicitation and ticket writing at SDLC task intake —
 
 # Requirements & Ticket Writing
 
-Intake is the only stage where the human is cheap to consult and misunderstanding
-is cheap to fix. Every ambiguity that survives intake is paid for at 10x during
-implementation. Spend the questions here.
+Intake is where the human is cheapest to consult and misunderstanding is
+cheapest to fix. Spend the questions here.
 
 ## Elicitation
 
-Before writing the ticket, verify you can answer all of these from what the human
-said. Ask about the ones you can't — batched into one message, not a drip:
+Check you can answer each of these from what the human said; ask about the
+rest in one batched message:
 
-- **Observed vs expected** (bugs): what happens now, what should happen, repro
-  steps or a failing example if available.
-- **Scope edges**: what is explicitly out — adjacent features the human does NOT
-  want touched.
-- **Constraints**: backward compatibility, no new dependencies, performance
-  bounds, deadline pressure that changes the quality bar.
-- **Done means**: how the human personally would check it's finished. Their answer
-  usually becomes AC-1 verbatim.
-- **Priority conflicts**: if this collides with in-flight tasks, which wins.
+- **Observed vs expected** (bugs): current behavior, desired behavior, repro
+  steps or a failing example.
+- **Scope edges**: adjacent features the human does not want touched.
+- **Constraints**: compatibility, dependencies, performance, deadline
+  pressure that changes the quality bar.
+- **Done means**: how the human would check it's finished — usually AC-1.
+- **Priority conflicts** with in-flight tasks.
 
-Skip questions whose answers are already in the conversation or obvious from the
-repo. Two or three sharp questions beat a form. If the human says "just use your
-judgment", record the judgment you chose in the ticket's Constraints so it is
-visible and reversible.
+Skip questions already answered by the conversation or the repo; two or three
+sharp questions beat a form. If the human says "use your judgment", record the
+judgment in the ticket's Constraints. A ticket with open questions does not
+advance to research.
 
-## Research Mode Classification (`research` field)
+## Research Classification (`research` field)
 
-Decided once at intake, alongside `workflow` — mechanical, not a feel call. Default
-`full`. Set `research: pinpointed` only when ALL of these hold for EVERY AC:
+Default `full`. Set `pinpointed` only when every AC meets all three:
 
-- The ticket cites a row in an attached or pasted machine-generated diagnostic
-  source — a SonarQube export, a `sarif_build`/`sarif_probe` error table, a
-  `test_run`/`test_probe` failure table, a compiler error list, or a stack
-  trace — that names an exact file path AND a line number or an unambiguous
-  symbol.
-- The source is tool output, not human recollection. "It's somewhere in
-  AuthController" does not qualify; a pasted SonarQube row with `file:
-  AuthController.cs, line: 142` does.
-- The AC is a local fix at the cited location, not a request to understand or
-  trace behavior across files — "why does X reach Y" always needs full research,
-  no matter how precisely X itself is located.
+- It cites a row from machine-generated diagnostics — a SonarQube export, a
+  `sarif_build`/`sarif_probe` error table, a `test_run`/`test_probe` failure
+  table, a compiler error list, or a stack trace — naming an exact file and a
+  line or unambiguous symbol. "Somewhere in AuthController" doesn't qualify.
+- The source is tool output, not recollection.
+- The AC is a local fix at that location, not a question of how behavior
+  flows across files.
 
-One AC failing any of these downgrades the WHOLE ticket to `full` — no
-partial-pinpointed tickets, and no self-assessed exceptions: this is a
-source-format check, not a confidence check, and a classification that feels
-right from the inside is not one you can trust. Record the field and move on;
-do not ask the human to confirm it.
+One failing AC makes the whole ticket `full`. This is a check on the source's
+format, not on how easy the fix looks; record the field without asking the
+human to confirm. `pinpointed` only changes the researcher dispatch to Confirm
+Mode — research, planning, implementation, and verification all still run.
+For `workflow: trivial`, record `full` as the unused default.
 
-`research: pinpointed` changes only the shape of the researcher dispatch
-(sdlc-orchestrator → Workflow step 2, Confirm Mode) — it does not skip the
-researcher, and plan/implement/verify still run in full.
+## Task State — `docs/tasks/<id>/main.yaml`
 
-For `workflow: trivial`, this field is not evaluated (trivial bypasses research
-entirely) — record `full` as the harmless unused default.
-
-## Task State File — `docs/tasks/<id>/main.yaml`
-
-Written at intake, in the same turn as the ticket. This is the ONLY state file
-for the task: documents under the task folder carry no frontmatter — documents
-are content, main.yaml is state.
+Written at intake, in the same turn as the ticket. It is the only state file:
+task documents carry no frontmatter.
 
 ```yaml
-# identity — written once at intake, never edited after
-id: <id>                         # lowercased Jira key, adhoc-<slug>,
-                                 #   or <parent-id>-fix-<slug> for follow-ups
+# identity — written once at intake
+id: <id>                         # lowercased Jira key, adhoc-<slug>, or <parent-id>-fix-<slug>
 source: jira | user
 priority: high | medium | low
 workflow: full | trivial
-research: full | pinpointed      # see Research Mode Classification above
-follows: <parent task id>        # follow-up tasks only; omit otherwise
+research: full | pinpointed
+follows: <parent task id>        # follow-ups only
 created: YYYY-MM-DD
 
-# pipeline state — mutable; updated per the reporting skill
+# pipeline state — updated per the reporting skill
 status: new | in-progress | blocked | verifying | done
 phase: none | "<k> of <N>"
-approved: pending | YYYY-MM-DD   # work/verification plan approval date
+approved: pending | YYYY-MM-DD   # plan approval date
 verified: none | zero-cost | G1 | G2 | ...
 head: none | <sha of last phase-boundary commit>
 ```
 
-`workflow` records the routing decision once, at intake: `full` runs every
-stage; `trivial` is the single-file/obvious/reversible escape hatch. Default
-`full` — downgrading to `trivial` is an explicit choice, visible and auditable
-in main.yaml, never an in-flight improvisation.
+`workflow` defaults to `full`; `trivial` (single-file, obvious, reversible) is
+an explicit intake choice, never an in-flight downgrade. Because every
+transition lands in this file, `git log --oneline -- docs/tasks/<id>/main.yaml`
+is the pipeline timeline.
 
-Because all state transitions land in this one file, its git history IS the
-pipeline timeline: `git log --oneline -- docs/tasks/<id>/main.yaml`.
-
-## Ticket Format
-
-Write to `docs/tasks/<id>/ticket.md`. No frontmatter — identity and state live
-in main.yaml. Exactly this structure:
+## Ticket — `docs/tasks/<id>/ticket.md`
 
 ```markdown
 # <id> — <title>
 
 ## Problem
-<1–3 sentences. What is broken/missing and where it manifests. Zero solution
-language — the design stage owns the how.>
+<1–3 sentences: what is broken or missing and where it shows. No solution language.>
 
 ## Target
-<1–3 sentences. The end state in concrete terms. WHAT is true when done.>
+<1–3 sentences: what is true when done.>
 
 ## Acceptance Criteria
 - [ ] AC-1: <binary-checkable statement>
-- [ ] AC-2: ...
 
 ## Constraints & Out of Scope
 <hard limits and explicit exclusions; "none">
@@ -118,46 +93,27 @@ language — the design stage owns the how.>
 <Jira link, related tasks, prior art; "none">
 ```
 
-When `research: pinpointed`, the diagnostic source's rows belong in References
-verbatim (or attached), not paraphrased — the researcher's Confirm Mode dispatch
-quotes them directly from here.
+- Every AC must name the command, request, or inspection that would prove it;
+  otherwise rewrite it.
+- Condense Jira imports — the ticket is the distilled contract and usually
+  shorter than its source.
+- For `pinpointed`, put the diagnostic rows in References verbatim; the
+  Confirm Mode dispatch quotes them from there.
 
 ## Follow-Up Tasks
 
-Work that continues a task whose pipeline already ran — a bug found after
-implementation, a build broken by the change, an extension of delivered
-behavior — is a NEW task, never a reopening of the old one. Full workflow,
-full circle: requirements, research, plan, implement, verify. "The parent
-already did research" is not a reason to skip research here.
+Work continuing a task whose pipeline already ran — a bug found afterwards, a
+build it broke, an extension — is a new task with the full workflow. The
+parent having done research is not a reason to skip it.
 
-- **Id:** `<parent-id>-fix-<slug>` (e.g. `proj-1234-fix-build-errors`).
-  The slug names the problem, not a counter — a second follow-up on the same
-  parent gets its own descriptive slug.
-- **State:** set `follows: <parent-id>` in the follow-up's main.yaml even
-  though the id encodes it — lineage is machine state, never parsed out of
-  string prefixes, and it keeps chains explicit when a follow-up's parent is
-  itself a follow-up.
-- **Research classification is independent per task.** A follow-up whose
-  parent was `pinpointed` is not automatically pinpointed — classify fresh
-  from this task's own input (a fresh build-break report typically
-  re-qualifies; a vaguer human-reported regression typically doesn't).
-- **References:** the parent's `ticket.md`, `research.md`, and
-  `final-report.md` are mandatory reference entries. Research inherits: the
-  follow-up's researcher dispatch attaches the parent's map and scopes only
-  the delta ("prior map attached; verify staleness and map only the failure
-  area") — never a blind full re-run, never a blind reuse.
-- Everything else is a normal task: same folder shape under
-  `docs/tasks/<id>/`, same main.yaml lifecycle, same phase-commit markers
-  (`<id>: phase N — ...` — the suffixed id keeps rollback greps from
-  cross-matching the parent's commits).
-
-## Quality Bar
-
-- Every AC must pass the check test: you can name the command, request, or
-  inspection that would prove it. If you can't, the AC is an aspiration, not a
-  criterion — rewrite it.
-- Condense Jira imports; never paste descriptions wholesale. The ticket is the
-  distilled contract and is usually shorter than its source.
-- A ticket with open questions does not advance to research. Ask, or park it.
-- A ticket that merely *looks* simple still gets `research: full` — ease of
-  the fix and precision of the location are different questions.
+- **Id:** `<parent-id>-fix-<slug>`, where the slug names the problem
+  (e.g. `proj-1234-fix-build-errors`).
+- **State:** set `follows: <parent-id>` even though the id encodes it —
+  lineage is machine state, never parsed from strings.
+- **Classify research fresh** from this task's own input; a pinpointed parent
+  doesn't make the follow-up pinpointed.
+- **References** include the parent's `ticket.md`, `research.md`, and
+  `final-report.md`. The researcher dispatch attaches the parent's map and
+  maps only the delta.
+- Otherwise a normal task: same folder, lifecycle, and phase-commit markers
+  (the suffixed id keeps rollback greps off the parent's commits).

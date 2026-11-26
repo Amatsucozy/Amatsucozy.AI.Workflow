@@ -43,7 +43,33 @@ from roslyn_mcp.lsp_client import (
 from roslyn_mcp.shaping import SEVERITY, flatten_symbols, loc as _loc, pos as _pos, rel as _rel
 from roslyn_mcp.workspaces import ClientPool, discover_solutions, resolve_solution
 
-mcp = MCPServer("roslyn-mcp")
+INSTRUCTIONS = """\
+C# semantic queries from a live Roslyn workspace (no build). Answers are the
+real call graph, unlike grep. Lines/cols are 1-based; get positions from
+document_symbols, never guess them. Callers: references. Implementers or
+overriders: implementations. Signatures: hover (cheaper than reading the
+file). After editing a file, call refresh_file before querying it. An empty
+result is an answer only when verdict is ok. Roslyn has no workspace-wide
+symbol search: find the file with grep/glob first.
+
+Verdicts:
+- workspace_loading: call workspace_status(wait_seconds=30), up to 120 s in
+  total, then repeat the same call. Still loading: report the check as
+  unavailable.
+- workspace_unselected: workspace_status(solution=<one of candidates>), then
+  repeat the same call.
+- server_dead: one workspace_status call restarts Roslyn; if it dies again,
+  report log_dir to the human.
+- file_not_found: relative paths resolve against the server root, not the
+  shell cwd. Fix the path.
+- timeout: check workspace_status, then retry once.
+
+Notes: references never crosses solutions. diagnostics is a per-file check;
+callers in other files stay invisible, so whole-solution verdicts still come
+from a real build. rename_preview never writes; apply the edits yourself.
+"""
+
+mcp = MCPServer("roslyn-mcp", instructions=INSTRUCTIONS)
 
 DEFAULT_MAX_WORKSPACES = 2
 UNSELECTED_HINT = ("More than one solution could own this file. Call "
@@ -280,7 +306,9 @@ def definition(file: str, line: int, col: int) -> dict:
 @mcp.tool()
 def implementations(file: str, line: int, col: int) -> dict:
     """Find implementations of the interface/abstract/virtual member or type at
-    (line, col). Returns `locations` like `definition`."""
+    (line, col). Returns `locations` like `definition`. Use this, not
+    `references`, to answer "who implements/overrides X" — references returns
+    usages, not implementers."""
     def go(c: RoslynClient, path: str) -> dict:
         uri = c.open(path)
         res = c.request("textDocument/implementation",
@@ -297,6 +325,7 @@ def references(file: str, line: int, col: int, include_declaration: bool = True,
     solution (never across solutions). Returns `total`, `truncated`, and `by_file`: {relative_path:
     [{line, col}, ...]} sorted by file. A `total` of 0 with verdict ok is a
     real answer; with verdict workspace_loading it is NOT — retry later.
+    `truncated: true` → re-call with a larger `max_results`.
     """
     def go(c: RoslynClient, path: str) -> dict:
         uri = c.open(path)

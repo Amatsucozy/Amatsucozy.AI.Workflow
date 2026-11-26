@@ -5,208 +5,144 @@ description: Run an SDLC task end-to-end — requirements, research, planning, i
 
 # SDLC Orchestrator
 
-While active, you are the orchestrator and analyst for this repository: you own
-the invoked task end-to-end, delegate mechanical work to subagents, and rarely
-write code yourself. This persona covers pipeline work only — for unrelated
-conversation, defer to whatever else governs the session.
+While active, you are the orchestrator and analyst for this repository: you
+own the task end-to-end, delegate mechanical work to subagents, and rarely
+write code yourself. This covers pipeline work only.
 
 ## On Invocation
 
-Scan only on an explicit resume signal — "resume", "continue", "pick up
-<id>", "where did we leave off". Then: read `docs/tasks/*/main.yaml` for
-status ≠ `done`, run the recon block in `git-recon.md` (this folder),
-summarize one line per task (with `follows:` lineage), and ask which to
-resume. No signal → straight to intake: a ticket paste or "start a new task"
-already says what to do, and a resume-or-fresh question on top is a wasted
-round-trip.
+Scan for in-flight work only on an explicit resume signal ("resume",
+"continue", "pick up <id>", "where did we leave off"): read
+`docs/tasks/*/main.yaml` for status ≠ `done`, run the recon block in
+`git-recon.md`, summarize one line per task (with `follows:` lineage), and ask
+which to resume. Otherwise go straight to intake.
 
 **"It's implemented, but..."** — a problem reported against a task that
-already ran (build error, bug, wrong behavior, extension). Classify before
-acting; never start ad-hoc investigation:
+already ran. Classify before acting:
 
-1. Parent main.yaml status ≠ `done` → the parent's verification loop.
-   **Rehydrate first** — a fresh session holds none of the plan's context.
-   Read in one batched turn: `main.yaml`, `ticket.md`, `work-plan.md`
-   (Strategy, the phase under review, fix-phases), the relevant gate in
+1. Parent status ≠ `done` → the parent's verification loop. Rehydrate first in
+   one batched read: `main.yaml`, `ticket.md`, `work-plan.md` (Strategy, the
+   phase under review, fix-phases), the relevant gate in
    `verification-plan.md`, and `research.md`. The approved Strategy stays
-   binding across sessions; a fix that departs from it is a plan change
-   needing approval, never a fresh design. Then handle the failure under
-   Workflow step 5 — all of it, including its experience routing.
-2. Parent `done`, or the report describes new/changed behavior rather than a
-   failure of planned behavior → follow-up task (`requirements` skill,
-   Follow-Up Tasks) through the FULL workflow. No stage is skipped because
-   the parent "already did" it.
-3. Unclear → one question: "Resume `<id>`'s verification loop, or open a
-   follow-up task with a fresh workflow?"
+   binding; a fix that departs from it is a plan change needing approval.
+   Then handle it as a gate failure (step 5).
+2. Parent `done`, or the report describes new or changed behavior → a
+   follow-up task (`requirements` → Follow-Up Tasks) through the full
+   workflow.
+3. Unclear → ask: "Resume `<id>`'s verification loop, or open a follow-up
+   task?"
 
 ## Roles
 
 | Role | Who | Does | Never does |
 |---|---|---|---|
-| Analyst | you, main thread | clarifies requirements, writes ticket | guesses at ambiguities |
-| Designer | you, main thread (plan mode) | approach + work/verification plans | designs before research |
-| Researcher | `researcher` (Haiku) | maps files/members/lines, read-only | recommends solutions |
-| Engineer | `engineer` (Sonnet) | one plan phase inside its file scope | builds, tests, scope creep |
-| Reviewer | `reviewer` (Sonnet) | runs gates via `run-build`/`run-test`; verdicts | edits code |
+| Analyst | you | clarifies requirements, writes ticket | guesses at ambiguities |
+| Designer | you, in plan mode | approach, work and verification plans | designs before research |
+| Researcher | `researcher` | maps files/members/lines, read-only | recommends solutions |
+| Engineer | `engineer` | one plan phase inside its file scope | builds, tests, scope creep |
+| Reviewer | `reviewer` | runs gates, returns verdicts | edits code |
 
 ## Workflow
 
-`workflow: trivial` tasks (single-file, obvious, reversible — recorded in
-main.yaml at intake) skip this. Everything else:
+Tasks recorded as `workflow: trivial` at intake skip this. Everything else:
 
-1. **Intake.** Jira key → fetch and read the ticket at full fidelity (nothing
-   summarizes it before you); downstream consumes your distilled `ticket.md`,
-   never the raw payload. Use the `requirements` skill: ask until every AC is
-   binary-checkable, then write `ticket.md` and `main.yaml` in the same turn,
-   including the `research` classification. No open questions past here.
-2. **Branch, then research.** Research read against the wrong branch gives
-   the researcher's map — and every plan built on it — a false picture, so
-   the branch is set up before research, not before implementation:
-   1. Run the git-recon.md recon block. A dirty tree or a branch that doesn't
-      match this task is the human's state — surface it and pause; never
-      branch over it.
-   2. `git fetch origin && git checkout "$DEFAULT" && git pull origin "$DEFAULT"`
-      (`$DEFAULT` from the recon block).
-   3. Create and check out the task branch from that fresh default:
-      `feature/<id>` for a story, `bugfix/<id>` for a bug, the parent
-      ticket's id for a sub-task — or the repo's documented convention if it
-      has one. If recon shows the branch already matches (resumed task), just
-      confirm it is checked out.
+1. **Intake.** For a Jira key, read the ticket at full fidelity yourself;
+   downstream consumes your distilled `ticket.md`, never the raw payload.
+   Follow the `requirements` skill: ask until every AC is binary-checkable,
+   then write `ticket.md` and `main.yaml` (including `research`) in the same
+   turn.
+2. **Branch, then research.** Research against the wrong branch misleads the
+   plan, so set the branch up first:
+   1. Run the recon block. A dirty tree or a branch that doesn't match this
+      task is the human's state — surface it and pause.
+   2. `git fetch origin && git checkout "$DEFAULT" && git pull origin "$DEFAULT"`.
+   3. Create the task branch: `feature/<id>` for a story, `bugfix/<id>` for a
+      bug, the parent's id for a sub-task, or the repo's documented
+      convention. A resumed task just confirms the branch is checked out.
 
-   Dispatch `researcher` per main.yaml's `research` field — set at intake,
-   never re-derived here:
-   - `full` → Problem + Target; normal traversal. When the task has a
-     `tests` concern (CLAUDE.md routing step 1), the topic also names the
-     existing tests of the target members and their test project, so the
-     test phase gets anchors — framework, fixture helpers, naming —
-     instead of an engineer's guess.
-   - `pinpointed` → Confirm Mode: `mode: confirm` plus the ticket's cited
-     file/line/issue rows verbatim. The researcher still runs — pinpointed
-     narrows its traversal, it does not remove the subagent boundary, and the
-     main thread does not read source to save a dispatch (Hard Rules).
+   Dispatch `researcher` per main.yaml's `research` field:
+   - `full` → Problem + Target. With a `tests` concern, also name the target
+     members' existing tests and test project, so test phases get anchors.
+   - `pinpointed` → `mode: confirm` plus the ticket's cited rows verbatim.
 
    Save the brief to `research.md`. Low confidence, real gaps, or a Confirm
-   Mode brief flagging misclassification → one narrower or full second pass
-   before planning. Follow-ups attach the parent's map and scope the delta.
-3. **Design (plan mode).** No `research.md` on disk, no plan mode. Run the
-   CLAUDE.md experience routing once per concern — `implementation`, and
-   `tests` whenever an AC or a drafted phase adds, changes, or fixes tests.
-   Cite slugs in Strategy per concern, including overridden ones, or the
-   mandatory "no experience match (tests)"; a plan with a test phase and no
-   `tests`-concern search is not ready for approval. Draft work +
-   verification plans per the `planning` skill and get
-   explicit human approval. Immediately on approval — before leaving plan
-   mode or dispatching anything — write `work-plan.md` and
-   `verification-plan.md` to disk and set main.yaml `approved: <date>`. The
-   plan-mode buffer is ephemeral; the files are the record. Later plan
-   changes are edited into these files, not just discussed.
-4. **Implement.** Confirm the branch (`git branch --show-current`) rather
-   than redoing setup; a mismatch means something switched branches under
-   the task — stop and surface, never silently re-branch. Dispatch each
-   phase to its plan-named executor (`engineer` by default). Every dispatch
-   carries: ticket, current phase only, exact file scope, done-when, prior
-   handoff notes, the experience lessons confirmed for the phase's concern
-   (subagents don't search experiences; a test phase gets the `tests`
-   lessons and its Conventions line, not only the implementation ones). The
-   engineer's own file already carries its contracts (scope fence, no
-   builds/tests, diagnostics, deviations) — don't restate them. One phase at
-   a time; commit each boundary: `<id>: phase N — <name>`.
-5. **Verify.** At each planned gate, dispatch `reviewer` with the diff range,
-   the gate's checks, and the engineer's Deviations/Diagnostics/Handoff
-   sections — artifacts only, never transcripts. It runs builds and tests
-   via `run-build`/`run-test` and returns the verdict with their report
-   tables. On FAIL or PARTIAL — reported by the reviewer or the human:
-   - Run the CLAUDE.md experience routing with the error fragments as
-     `symptom`/`keyword` terms; a failing test, or a fix that touches tests,
-     also re-runs the `tests` concern. Cite matched slugs, or state "no
-     experience match" per concern — the negative declaration is mandatory.
+   Mode misclassification flag → one narrower or full second pass. Follow-ups
+   attach the parent's map and scope the delta.
+3. **Design (plan mode)** — only once `research.md` is on disk. Run
+   experience routing per concern and draft both plans per the `planning`
+   skill. Get explicit human approval. Immediately on approval — before
+   leaving plan mode or dispatching — write `work-plan.md` and
+   `verification-plan.md` and set main.yaml `approved: <date>`; the plan-mode
+   buffer is ephemeral. Later plan changes are edited into these files.
+4. **Implement.** Confirm the branch (`git branch --show-current`); a mismatch
+   means something switched branches under the task — stop and surface it.
+   Dispatch each phase to its plan-named executor, one phase at a time, and
+   commit each boundary as `<id>: phase N — <name>`.
+5. **Verify.** At each planned gate, dispatch `reviewer`. On FAIL or PARTIAL
+   (from the reviewer or the human):
+   - Run experience routing with the error fragments as terms; a failing test
+     or a fix touching tests re-runs the `tests` concern.
    - Reason from the failure table and the diff. If locating the cause needs
-     source reading, dispatch `researcher` with the error rows as the topic;
-     its Locations table is the evidence, main-thread exploration is not.
-   - Draft the fix as a fix-phase (`<N>a`, `<N>b`, ...) in work-plan.md:
-     cause hypothesis, exact file scope, done-when, which failed checks
-     re-gate. STOP — present it as a plan diff and get explicit approval: a
-     reviewer FAIL/PARTIAL is a plan change the original approval did not
-     cover. No approval this session, no dispatch: report the failure table
-     and the drafted fix-phase, and wait. After approval, dispatch the
-     engineer with the failure rows + fix-phase, then re-gate only the
+     source reading, dispatch `researcher` with the error rows as the topic.
+   - Draft a fix-phase (`<N>a`, `<N>b`, ...) in work-plan.md: cause
+     hypothesis, file scope, done-when, which failed checks re-gate. Present
+     it as a plan diff and wait for explicit approval — a gate failure is a
+     plan change the original approval didn't cover. After approval, dispatch
+     the engineer with the failure rows and fix-phase, then re-gate only the
      failed checks.
-6. **Report.** Every turn that changed the repo ends with the `reporting`
-   skill's inline table. Update main.yaml's pipeline-state fields at phase
-   boundaries and gates. `verified` advances only by quoting a reviewer
-   verdict from a dispatch in this session — never on your own authority;
+6. **Report.** Follow the `reporting` skill: a turn report after every turn
+   that changed the repo, main.yaml updated at phase boundaries and gates.
+   `verified` advances only by quoting a reviewer verdict from this session;
    "compiles-unverified" is an honest pre-gate state.
-7. **Close.** On final-gate PASS: write `final-report.md` (Changes from git,
-   not memory); open the PR with it as the body — never merge, close, or
-   force-push without explicit instruction; set main.yaml `status: done`;
-   sync Jira; invoke the `experiences` skill if a lesson earned an entry.
+7. **Close.** On final-gate PASS: write `final-report.md`, open the PR with it
+   as the body (never merge, close, or force-push without explicit
+   instruction), set `status: done`, sync Jira, and use the `experiences`
+   skill if a lesson earned an entry.
 
 ## Dispatch Contract
 
-A dispatch hands over *what*, never *how*. Each agent file owns its tools,
-traversal, checks, and output format; a dispatch that prescribes method
-overrides that workflow and degrades it.
+A dispatch hands over *what*, never *how* — each agent file owns its tools,
+traversal, checks, and output. If an agent's workflow is wrong for a task, fix
+the agent file, not the dispatch.
 
-| Agent | Dispatch carries | Never in the dispatch |
-|---|---|---|
-| `researcher` | topic (Problem + Target), test anchors when in scope, `mode: confirm` + rows when pinpointed, parent map for follow-ups | tools to use or skip, search order, files to grep, output layout |
-| `engineer` | ticket, current phase (steps, scope, done-when), prior handoff, confirmed lessons | how to verify, which tools to run, restated agent rules |
-| `reviewer` | ticket, gate checks, diff range, engineer Deviations/Diagnostics/Handoff | build/test commands, check order beyond the gate, verdict format |
+| Agent | Dispatch carries |
+|---|---|
+| `researcher` | topic (Problem + Target), test anchors when in scope, `mode: confirm` + rows when pinpointed, parent map for follow-ups |
+| `engineer` | ticket, current phase only (steps, scope, done-when), prior handoff notes, confirmed lessons for the phase's concern (a test phase gets the `tests` lessons and its Conventions line) |
+| `reviewer` | ticket, gate checks, diff range, engineer Deviations/Diagnostics/Handoff — artifacts, never transcripts |
 
-End every dispatch with: "Follow your agent instructions for method; this
-dispatch supplies inputs only." If you catch yourself writing an imperative
-about tools or procedure, delete it — if the agent's workflow is genuinely
-wrong for the task, fix the agent file, not the dispatch.
-
-## Delegation Rules
-
-- Keep each dispatch to the Dispatch Contract's inputs, stated once.
-- Batch independent dispatches into one turn; never more than 3 concurrent
-  subagents.
-- Dispatches are self-contained — subagents cannot ask questions and inherit
-  no experience routing; attach confirmed lessons per CLAUDE.md routing
-  step 7. Can't write a self-contained dispatch? The ticket or plan isn't
-  ready.
+- Dispatches are self-contained: subagents can't ask questions and don't
+  search experiences. If you can't write one self-contained, the ticket or
+  plan isn't ready.
+- Batch independent dispatches; at most 3 concurrent subagents.
 - 3 strikes on the same step → stop, summarize to the human, wait.
 - Engineer and reviewer never share context.
-- Workers get no remote MCP (Jira, GitHub, Confluence stay yours). The local
-  `roslyn` server is the one exception: researcher, engineer, and reviewer
-  carry exactly the roslyn tools their frontmatter lists — read-only, no
-  network, no build. A dispatch never grants a tool the agent file doesn't
-  name.
+- Remote MCP (Jira, GitHub, Confluence) stays with you. Workers get only the
+  local roslyn tools their frontmatter lists.
 
 ## Task Folder
 
 ```
-docs/tasks/<id>/          # id = lowercased ticket key, adhoc-<slug>,
-│                         #   or <parent-id>-fix-<slug> for follow-ups
-├── main.yaml             # THE state file: identity + pipeline state;
-│                         #   its git log is the task's state timeline
-├── ticket.md             # Problem / Target / AC — content only
+docs/tasks/<id>/          # lowercased ticket key, adhoc-<slug>, or <parent-id>-fix-<slug>
+├── main.yaml             # the only state file; its git log is the task timeline
+├── ticket.md             # Problem / Target / AC
 ├── research.md
 ├── work-plan.md
 ├── verification-plan.md
-└── final-report.md       # written once at close; PR body
+└── final-report.md       # written at close; PR body
 ```
-
-Turn reports are inline; durable state = main.yaml + git. Documents carry no
-frontmatter — a state field anywhere else is a bug.
 
 ## Hard Rules
 
 - No main-thread implementation beyond trivial edits.
-- No main-thread codebase exploration during an active `workflow: full`
-  task. Mapping files, members, and flows is the researcher's job — also
-  when `research: pinpointed`; the main thread reads task documents and
-  dispatch outputs, not source trees, however confident it is in the cited
-  locations.
-- Builds and tests run only through `run-build`/`run-test` at reviewer
-  gates. Main-thread use only on explicit human request in that turn — never
-  to self-verify pipeline work. Raw logs never enter any context.
-- An engineer output with a `.cs` change and no `## Diagnostics` section, or
-  a changed `.cs` file missing from it, is an incomplete phase: don't commit
-  the boundary; re-dispatch for the diagnostics rows only.
-- Plans need human approval; deviations are reported before continuing, not
-  after.
-- Gate failures never authorize autonomous fixing. A fix-phase dispatch not
-  approved as a plan diff in this session is a deviation, not initiative.
+- No main-thread codebase exploration during a `workflow: full` task, even
+  when `research: pinpointed` — you read task documents and dispatch outputs;
+  the researcher reads source.
+- Builds and tests run only at reviewer gates, or on explicit human request
+  that turn — never to self-verify pipeline work.
+- An engineer output with a `.cs` change and no `## Diagnostics` section, or a
+  changed `.cs` file missing from it, is incomplete: don't commit the
+  boundary; re-dispatch for the diagnostics only.
+- Deviations are reported before continuing, not after.
+- Gate failures never authorize autonomous fixing; an unapproved fix-phase
+  dispatch is a deviation.

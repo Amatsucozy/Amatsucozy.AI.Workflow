@@ -5,13 +5,10 @@ description: Work-plan and verification-plan standards for the SDLC pipeline. Us
 
 # Planning Standards
 
-Plans are dispatch material: each phase becomes a self-contained engineer prompt,
-and each gate becomes a self-contained reviewer prompt. Write for those consumers.
-The plans ship as a pair — a work plan without a verification plan is unreviewable,
-and a verification plan without a work plan has nothing to gate.
-
-Plans carry no frontmatter — documents are content, task state lives in
-`docs/tasks/<id>/main.yaml` (the `approved` field records plan approval).
+Plans are dispatch material: each phase becomes a self-contained engineer
+prompt and each gate a self-contained reviewer prompt. They ship as a pair —
+a work plan without gates is unreviewable, and gates without a work plan have
+nothing to check.
 
 ## Work Plan — `docs/tasks/<id>/work-plan.md`
 
@@ -20,69 +17,49 @@ Plans carry no frontmatter — documents are content, task state lives in
 <2–4 sentences: the chosen approach, and the rejected alternative with one
 sentence on why — engineers who don't know why an option lost drift back into it.>
 
-Experience: implementation — <slugs, or none>; tests — <slugs, none, or n/a
-(no phase adds or changes tests)>
+Experience: implementation — <slugs, or none>; tests — <slugs, none, or n/a>
 
 ## Phase 1 — <name>
 Goal: <one sentence — what is true at phase end>
-Executor: engineer | <specialist agent from installed setup>
-Scope: <exact file list — this becomes the executor's fence>
-Conventions: <test phases only — framework, naming pattern, and the
-fixture/builder helpers to reuse, each anchored to an existing test file>
+Executor: engineer | <specialist agent from the installed setup>
+Scope: <exact file list — the executor's fence>
+Conventions: <test phases only — framework, naming pattern, fixture/builder
+helpers to reuse, each anchored to an existing test file>
 
 | Step | Action | File | Anchor | Done-when |
 |---|---|---|---|---|
-| 1.1 | <one concrete change> | | <member, ~line from research> | <checkable WITHOUT building> |
+| 1.1 | <one concrete change> | | <member, ~line from research> | <checkable without building> |
 
-Exit state: <coherent, committable state — enables checkpoint resume + rollback>
+Exit state: <coherent, committable state>
 
 ## Explicitly Not Doing
-<mirrors ticket out-of-scope plus tempting adjacent improvements>
+<ticket out-of-scope plus tempting adjacent improvements>
 ```
 
-Rules:
-- **Research is a precondition, not a field.** `docs/tasks/<id>/research.md`
-  must exist on disk before drafting — the orchestrator enforces this; the
-  plan does not carry a `based-on` pointer.
-- **Phase = dispatch unit.** Size each phase so its prompt (ticket + phase +
-  scope) is self-contained; the engineer cannot ask follow-ups.
-- **Experience is cited per concern.** The Strategy's Experience line names
-  the confirmed slugs for `implementation` and for `tests` separately, from
-  the CLAUDE.md experience routing run once per concern. "none" declares that
-  the search ran and found nothing; "n/a" that no phase touches tests. A
-  plan with a test phase and an empty or missing `tests` entry is not ready
-  for approval — the engineer will otherwise write tests from the
-  implementation lessons alone.
-- **Test phases carry their conventions.** A phase whose Scope adds or
-  changes test files fills its `Conventions:` line — framework, naming
-  pattern, and the fixture/builder helpers to reuse — each anchored to an
-  existing test file from research and to the `tests` slugs in Strategy.
-  "Add tests for X" alone makes the engineer invent a style, and the
-  resulting inconsistency is a review finding no gate catches. Non-test
-  phases omit the line.
-- **Name the executor per phase.** Default `engineer`; choose a specialist
-  agent from the installed setup when the phase's work matches its speciality
-  (e.g. dotnet test generation → the test-generator agent). One executor per
-  phase — if a phase seems to need two, it is two phases. The `engineer`
-  file carries the pipeline contracts (scope fence, no builds, deviation
-  reporting), so its dispatch doesn't restate them; a specialist executor
-  whose own file lacks them receives them in its dispatch.
-- **Prefer fewer, fatter phases.** Every phase is a fresh subagent bootstrap —
-  new context, new cache writes, its own rate-limit footprint. Split phases
-  for rollback boundaries and scope fences, never for tidiness; if two phases
-  would share most of their file scope, they are one phase.
-- **Done-when never needs a compiler.** "Method exists with signature X",
-  "registration added in Program.cs" — yes. "Tests pass" — no; that's a gate.
-- **Every phase boundary is a commit** with message `<id>: phase N — <name>`.
-  Order phases so each commit leaves the tree coherent even if work stops there.
-- **Independent phases** may be flagged `parallel-ok` for batched dispatch —
-  only when their file scopes are disjoint AND neither reads state the other
-  writes. When in doubt, sequential.
+- **Experience per concern.** The Experience line comes from routing each
+  concern: "none" means the search ran and found nothing, "n/a" means no
+  phase touches tests. A plan with a test phase and no `tests` entry isn't
+  ready for approval.
+- **Test phases fill Conventions**, anchored to existing test files from
+  research and to the `tests` slugs. Without it the engineer invents a style
+  no gate will catch. Other phases omit the line.
+- **One executor per phase**, default `engineer`; pick a specialist agent when
+  the work matches its speciality. A specialist whose file lacks the
+  engineer's contracts (scope fence, no builds, deviation reporting) gets them
+  in its dispatch.
+- **Fewer, fatter phases.** Each phase is a fresh subagent bootstrap. Split
+  for rollback boundaries and scope fences, not tidiness; phases sharing most
+  of their scope are one phase. Size each so its dispatch is self-contained.
+- **Done-when never needs a compiler.** "Method exists with signature X" —
+  yes. "Tests pass" — that's a gate.
+- **Every phase boundary is a commit** (`<id>: phase N — <name>`) that leaves
+  the tree coherent.
+- **`parallel-ok`** only when file scopes are disjoint and neither phase reads
+  state the other writes. When in doubt, sequential.
 
 ## Verification Plan — `docs/tasks/<id>/verification-plan.md`
 
-Builds are expensive here. Verification is therefore batched into few gates, not
-sprinkled per step — this is the entire reason the two plans are separate files.
+Builds are expensive here, so verification is batched into a few gates.
 
 ```markdown
 ## Gate Schedule
@@ -92,33 +69,28 @@ sprinkled per step — this is the entire reason the two plans are separate file
 | G2 (final) | last phase | full | full suite + all ACs | ~N min |
 
 ## Zero-Cost Checks (any time, no build)
-<lint on changed files; diff matches scope; no secrets in diff; new or
-changed tests match their phase's Conventions line>
+<lint on changed files; diff matches scope; no secrets; tests match their phase's Conventions>
 
 ## Gate G<n>
 | Check | Command | Pass condition | On fail |
 |---|---|---|---|
 
 ## Regression Watchlist
-<from research's boundary/risk rows: behaviors that must not change, checked at final gate>
+<behaviors from research's boundary/risk rows that must not change; checked at the final gate>
 ```
 
-Rules:
-- **Default two gates** (mid-point + final). Add a third only when an early
+- **Two gates by default** (mid-point + final). Add a third only when an early
   phase's failure would poison everything after it.
-- **Every AC appears as a final-gate row.** Audit by diffing the ticket's AC
-  list against G-final before requesting approval — a missing AC means the
-  ticket can "pass" unfinished.
-- **Every gate row has an On-fail action** (fix-forward scope, or rollback to
-  phase-commit SHA). A gate that fails without a defined response stalls the
-  pipeline.
-- **Gate commands are the capped skills.** Build rows invoke `run-build`,
-  test rows invoke `run-test` (`no_build=true` right after a successful
-  build) — never raw `dotnet` commands; the reviewer runs the row as written.
+- **Every AC is a final-gate row.** Diff the ticket's AC list against G-final
+  before asking for approval.
+- **Every row has an On-fail action** (fix-forward scope or rollback to a
+  phase-commit SHA).
+- **Gate commands are the skills**: build rows invoke `run-build`, test rows
+  `run-test` (`no_build=true` right after a successful build) — never raw
+  `dotnet` commands.
 
 ## Approval
 
-Present both plans to the human in plan mode and get explicit approval before the
-first engineer dispatch. Record the approval date in main.yaml's `approved`
-field. Any later change to an approved plan is re-presented as a diff, not
-silently rewritten.
+Present both plans in plan mode and get explicit approval before the first
+dispatch; record the date in main.yaml's `approved`. Later changes to an
+approved plan are re-presented as a diff.
