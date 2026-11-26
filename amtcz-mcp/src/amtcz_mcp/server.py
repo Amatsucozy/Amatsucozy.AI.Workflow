@@ -14,8 +14,19 @@ import dataclasses
 import os
 
 from mcp.server.mcpserver import MCPServer
+from mcp.types import ToolAnnotations
 
 from amtcz_mcp import experiences, sarif, trx
+
+# Tool annotations let clients auto-approve safe calls. Read-only tools touch
+# nothing outside the server's own process state.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False,
+                            idempotentHint=True, openWorldHint=False)
+
+# sarif_build/test_run write build output (bin/obj, SARIF logs, TestResults/)
+# but never touch source; rebuild=true deletes SARIF logs before recompiling.
+LOCAL_BUILD = ToolAnnotations(readOnlyHint=False, destructiveHint=False,
+                              idempotentHint=True, openWorldHint=False)
 
 INSTRUCTIONS = """\
 .NET build/test runner and experience-memory search. Every result has a
@@ -41,7 +52,7 @@ Details:
 mcp = MCPServer("amtcz", instructions=INSTRUCTIONS)
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOCAL_BUILD)
 def sarif_build(
     root: str = ".",
     target: str | None = None,
@@ -81,7 +92,7 @@ def sarif_build(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def sarif_probe(
     root: str = ".",
     pattern: str = "**/obj/**/msbuild.sarif",
@@ -103,7 +114,7 @@ def sarif_probe(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOCAL_BUILD)
 def test_run(
     root: str = ".",
     target: str | None = None,
@@ -138,7 +149,7 @@ def test_run(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def test_probe(
     root: str = ".",
     results_dir: str = "TestResults/trx",
@@ -158,7 +169,7 @@ def test_probe(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def exp_inventory(root: str = ".") -> dict:
     """List the experience-memory tag inventory (docs/experiences/*.md) as
     tag -> entry-count. Call this before exp_search, so search tags come
@@ -175,7 +186,7 @@ def exp_inventory(root: str = ".") -> dict:
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def exp_search(
     root: str = ".",
     tag: list[str] | None = None,

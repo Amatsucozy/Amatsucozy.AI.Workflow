@@ -32,6 +32,8 @@ import threading
 from pathlib import Path
 from typing import Any, Optional
 
+from mcp.types import ToolAnnotations
+
 try:  # mcp >= 2.0
     from mcp.server.mcpserver import MCPServer
 except ImportError:  # mcp 1.x
@@ -42,6 +44,11 @@ from roslyn_mcp.lsp_client import (
 )
 from roslyn_mcp.shaping import SEVERITY, flatten_symbols, loc as _loc, pos as _pos, rel as _rel
 from roslyn_mcp.workspaces import ClientPool, discover_solutions, resolve_solution
+
+# Tool annotations let clients auto-approve safe calls. Read-only tools touch
+# nothing outside the server's own process state.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False,
+                            idempotentHint=True, openWorldHint=False)
 
 INSTRUCTIONS = """\
 C# semantic queries from a live Roslyn workspace (no build). Answers are the
@@ -209,7 +216,7 @@ def _ws_info(c: RoslynClient) -> dict:
 
 # -------------------------------------------------------------------- tools
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def workspace_status(wait_seconds: float = 0, solution: Optional[str] = None) -> dict:
     """Report which solutions the server root holds, which Roslyn workspaces
     are loaded, and whether the current one has finished loading projects.
@@ -270,7 +277,7 @@ def workspace_status(wait_seconds: float = 0, solution: Optional[str] = None) ->
         return {"verdict": "server_dead", "alive": False, "ready": False, "error": str(e), **base}
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def document_symbols(file: str) -> dict:
     """List every declared symbol in a C# file (namespaces, types, members),
     flattened with a dotted `container` and 1-based `line`/`col` of each name.
@@ -288,7 +295,7 @@ def document_symbols(file: str) -> dict:
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def definition(file: str, line: int, col: int) -> dict:
     """Go to definition of the symbol at (line, col) (1-based). Returns
     `locations` [{file, line, col, ...}]. Empty list with verdict ok means the
@@ -303,7 +310,7 @@ def definition(file: str, line: int, col: int) -> dict:
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def implementations(file: str, line: int, col: int) -> dict:
     """Find implementations of the interface/abstract/virtual member or type at
     (line, col). Returns `locations` like `definition`. Use this, not
@@ -318,7 +325,7 @@ def implementations(file: str, line: int, col: int) -> dict:
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def references(file: str, line: int, col: int, include_declaration: bool = True,
                max_results: int = 200) -> dict:
     """Find all references to the symbol at (line, col) across the file's
@@ -342,7 +349,7 @@ def references(file: str, line: int, col: int, include_declaration: bool = True,
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def hover(file: str, line: int, col: int) -> dict:
     """Return the signature/documentation Roslyn shows on hover for the symbol
     at (line, col), as `text` (markdown). Cheapest way to get a resolved type
@@ -364,7 +371,7 @@ def hover(file: str, line: int, col: int) -> dict:
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def diagnostics(file: str, min_severity: str = "warning") -> dict:
     """Pull compiler + analyzer diagnostics for one file from the live Roslyn
     workspace (no `dotnet build` needed; reflects unsaved-to-build state on
@@ -398,7 +405,7 @@ def diagnostics(file: str, min_severity: str = "warning") -> dict:
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def rename_preview(file: str, line: int, col: int, new_name: str) -> dict:
     """Compute a solution-wide rename of the symbol at (line, col) WITHOUT
     applying it. Returns `by_file`: {relative_path: [{line, col, end_line,
@@ -431,7 +438,7 @@ def rename_preview(file: str, line: int, col: int, new_name: str) -> dict:
     return _run(go, file)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def refresh_file(file: str) -> dict:
     """Tell Roslyn a file changed on disk (after the agent edits it) so later
     queries see the new content. Also closes nothing — documents stay open
