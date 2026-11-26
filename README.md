@@ -32,9 +32,9 @@ instead of leaving you to merge a loose file — plus reference docs
 ([`TUNING.md`](sdlc-kit/TUNING.md), [`MIGRATION.md`](sdlc-kit/MIGRATION.md),
 [`SESSION.md`](sdlc-kit/SESSION.md)) that explain the design and its open
 questions. `CLAUDE.md` carries the working conventions, the experience-first
-task routing, and the cross-tool quick-reference tables for the three MCP
-servers inline (always-on) rather than as separate skills — see `TUNING.md`
-for why. [`sdlc-kit/AGENTS.md`](sdlc-kit/AGENTS.md) is its Codex counterpart.
+task routing, and a short map of the three MCP servers; each server ships its
+own cross-tool guidance as MCP server `instructions`, so it loads only when the
+server is connected — see `TUNING.md` for why. [`sdlc-kit/AGENTS.md`](sdlc-kit/AGENTS.md) is its Codex counterpart.
 
 [`sdlc-kit/.devin/`](sdlc-kit/.devin) mirrors the four agents for Devin: same
 prose contracts, Devin-shaped frontmatter (`allowed-tools`, Devin model ids).

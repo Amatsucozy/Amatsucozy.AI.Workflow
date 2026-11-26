@@ -5,32 +5,28 @@ description: Inline turn reports, main.yaml progress fields, and the final repor
 
 # Reporting
 
-Reports are inline chat tables, not files — the human reads them in the flow of
-the conversation, and durable state lives in exactly two places: git (what
-changed) and main.yaml (where the pipeline stands). Only the final report is
-written to disk, because it outlives the conversation as the PR body.
+Turn reports are inline chat tables, not files. Durable state lives in git
+(what changed) and main.yaml (where the pipeline stands). Only the final
+report goes to disk, because it outlives the conversation as the PR body.
 
-## Turn Report (inline, end of any turn that changed the repo)
-
-One table, then only the lines the rules below call for — on an uneventful
-turn, at most the Next line.
+## Turn Report (end of any turn that changed the repo)
 
 | Phase | Status | Verified | Dispatched | Changed this turn | Deviations |
 |---|---|---|---|---|---|
 | 2/4 | in-progress | none | engineer ×1 | 3 files (src/Api ×2, tests ×1) | none |
 
-- **Changed this turn** comes from git (`git diff --stat`, plus untracked
-  task files from `git status --short`, which diff omits), summarized to
-  counts and areas — never a hand-written file list.
-- **Deviations** ≠ "none" requires one line below the table naming the
-  file/step and the justification. Blocked/needs-decision status requires a
-  line with the exact question for the human.
-- End with a one-line **Next** when the task continues.
+- **Changed this turn** comes from `git diff --stat` plus untracked files from
+  `git status --short`, summarized to counts and areas.
+- Deviations other than "none" get one line below the table naming the
+  file/step and justification. A blocked or needs-decision status gets a line
+  with the exact question.
+- End with a one-line **Next** when the task continues. On a quiet turn,
+  that's all.
 
-## Durable Progress — `docs/tasks/<id>/main.yaml`
+## main.yaml Progress
 
-At every phase boundary and gate, update the pipeline-state fields of
-main.yaml — this is what resume reads:
+At every phase boundary and gate, update the pipeline-state fields in place —
+this is what resume reads:
 
 ```yaml
 status: in-progress | blocked | verifying | done
@@ -39,15 +35,11 @@ verified: none | zero-cost | G1 | G2
 head: <sha of last phase-boundary commit>
 ```
 
-Four mutable fields, updated in place (the identity fields and `approved`
-above them are written earlier and left alone) — a few tokens per boundary,
-and combined with git it reconstructs full task state at any resume. Since
-every transition is a diff to this one file, its git log doubles as the task's
-state timeline.
+Identity fields and `approved` are written earlier and left alone.
 
-## Final Report — `docs/tasks/<id>/final-report.md` (at close)
+## Final Report — `docs/tasks/<id>/final-report.md`
 
-Written once, at final-gate PASS; becomes the PR body verbatim. Write it for a
+Written once at final-gate PASS; becomes the PR body verbatim. Write it for a
 colleague who saw none of the conversation.
 
 ```markdown
@@ -66,11 +58,10 @@ colleague who saw none of the conversation.
 <gates run, verdicts, AC-by-AC outcome with evidence pointers>
 
 ## Notes for Reviewers
-<deviations that survived (with justification), known limitations, follow-ups>
+<surviving deviations with justification, known limitations, follow-ups>
 ```
 
-Known limitation: per-turn telemetry is not persisted, so pipeline stats at
-close are best-effort — phase-boundary commits, quoted gate verdicts, and
-main.yaml's git history reconstruct most of it. If tuning decisions need
-harder numbers, the escalation is file-based telemetry (see the kit's
-TUNING.md).
+Changes come from git, not memory. Per-turn telemetry isn't persisted, so
+close-time stats are reconstructed from phase commits, quoted gate verdicts,
+and main.yaml's git history (see the kit's TUNING.md if harder numbers are
+needed).

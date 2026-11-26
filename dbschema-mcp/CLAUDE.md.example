@@ -1,7 +1,8 @@
 # Reference — dbschema-mcp tools
 
-Merge this section into the consuming repository's `CLAUDE.md`, alongside the
-`amtcz-mcp` reference block if you have one. Everything here is cross-tool
+The server already publishes this guidance as its MCP `instructions`. Merge
+this section into the consuming repository's instruction file only for a
+client that doesn't surface server instructions. Everything here is cross-tool
 judgment; per-tool parameters and verdict meanings are in the tool
 descriptions themselves and are not repeated.
 

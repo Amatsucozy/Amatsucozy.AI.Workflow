@@ -14,13 +14,45 @@ import dataclasses
 import os
 
 from mcp.server.mcpserver import MCPServer
+from mcp.types import ToolAnnotations
 
 from amtcz_mcp import experiences, sarif, trx
 
-mcp = MCPServer("amtcz")
+# Tool annotations let clients auto-approve safe calls. Read-only tools touch
+# nothing outside the server's own process state.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False,
+                            idempotentHint=True, openWorldHint=False)
+
+# sarif_build/test_run write build output (bin/obj, SARIF logs, TestResults/)
+# but never touch source; rebuild=true deletes SARIF logs before recompiling.
+LOCAL_BUILD = ToolAnnotations(readOnlyHint=False, destructiveHint=False,
+                              idempotentHint=True, openWorldHint=False)
+
+INSTRUCTIONS = """\
+.NET build/test runner and experience-memory search. Every result has a
+`verdict`; act on it, never re-derive it from console text. Build with
+sarif_build, test with test_run (no_build=true right after a successful
+build). Truncated table: re-read with sarif_probe / test_probe and a larger
+max_rows instead of rebuilding or rerunning. Infrastructure verdicts
+(no_sarif_logs, gap_msbuild_failure, no_trx, dotnet_not_found): report the
+console tail to the human, no blind retries.
+
+Details:
+- rebuild=true pays a full recompile; use it only on human request (branch
+  switch, removed project, suspected stale logs). Carried logs are valid.
+- zero_discovered means a bad filter or target: fix the invocation once.
+- Never load raw build/test logs, .sarif or .trx files into context; the
+  structured report is the output.
+- Experiences: call exp_inventory first and take search tags from it, then
+  one exp_search per concern (implementation, tests) with tag/symptom/keyword
+  together. A hit is relevant only if its use_when matches your situation;
+  read the file before applying it. no_entries: skip search.
+"""
+
+mcp = MCPServer("amtcz", instructions=INSTRUCTIONS)
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOCAL_BUILD)
 def sarif_build(
     root: str = ".",
     target: str | None = None,
@@ -60,7 +92,7 @@ def sarif_build(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def sarif_probe(
     root: str = ".",
     pattern: str = "**/obj/**/msbuild.sarif",
@@ -82,7 +114,7 @@ def sarif_probe(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOCAL_BUILD)
 def test_run(
     root: str = ".",
     target: str | None = None,
@@ -117,7 +149,7 @@ def test_run(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def test_probe(
     root: str = ".",
     results_dir: str = "TestResults/trx",
@@ -137,12 +169,11 @@ def test_probe(
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def exp_inventory(root: str = ".") -> dict:
     """List the experience-memory tag inventory (docs/experiences/*.md) as
-    tag -> entry-count. This is CLAUDE.md's experience-routing step 1 —
-    always call this before exp_search, so search tags come from the real
-    inventory rather than an invented near-synonym.
+    tag -> entry-count. Call this before exp_search, so search tags come
+    from the real inventory rather than an invented near-synonym.
 
     verdict meanings:
       "no_entries" - docs/experiences/ has zero entries and zero malformed
@@ -155,7 +186,7 @@ def exp_inventory(root: str = ".") -> dict:
     return dataclasses.asdict(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def exp_search(
     root: str = ".",
     tag: list[str] | None = None,
@@ -163,8 +194,7 @@ def exp_search(
     keyword: list[str] | None = None,
     max_rows: int = 8,
 ) -> dict:
-    """Search experience-memory entries by tag/symptom/keyword (CLAUDE.md
-    experience-routing step 2). At least one of tag, symptom, or keyword is
+    """Search experience-memory entries by tag/symptom/keyword At least one of tag, symptom, or keyword is
     required. Never returns lesson bodies, only each hit's use_when column
     and path, by design — the caller decides which hits actually match their
     situation (via use_when) before reading the full file at path, rather

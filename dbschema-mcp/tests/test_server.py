@@ -210,3 +210,20 @@ def test_list_tables_filters_and_empty(loaded):
     assert server.schema_list_tables(kind="view")["verdict"] == "empty"
     capped = server.schema_list_tables(max_results=2)
     assert capped["total"] == 6 and capped["shown"] == 2
+
+
+def test_server_publishes_instructions():
+    # Cross-tool guidance travels with the server so every MCP client gets it;
+    # Codex reads the first 512 characters when deciding how to use a server.
+    assert server.mcp.instructions
+    assert len(server.mcp.instructions.split("\n\n")[0]) <= 512
+
+
+def test_tools_annotated_read_only():
+    # Clients auto-approve on these hints; every tool here is read-only.
+    for t in asyncio.run(server.mcp.list_tools()):
+        assert t.annotations is not None, t.name
+        hints = t.annotations.model_dump(by_alias=True)  # wire names
+        assert hints["readOnlyHint"] is True, t.name
+        assert hints["destructiveHint"] is False, t.name
+        assert hints["openWorldHint"] is False, t.name

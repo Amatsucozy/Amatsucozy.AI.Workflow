@@ -23,6 +23,8 @@ import sys
 from dataclasses import asdict
 from typing import Any
 
+from mcp.types import ToolAnnotations
+
 from dbschema_mcp import VERSION
 from dbschema_mcp.catalog import SchemaIndex
 from dbschema_mcp.providers import make_provider
@@ -32,7 +34,33 @@ try:  # mcp 2.x
 except ImportError:  # mcp 1.x
     from mcp.server.fastmcp import FastMCP as _Server  # type: ignore[no-redef]
 
-mcp = _Server("dbschema")
+# Tool annotations let clients auto-approve safe calls. Read-only tools touch
+# nothing outside the server's own process state.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False,
+                            idempotentHint=True, openWorldHint=False)
+
+INSTRUCTIONS = """\
+Database schema lookup: structure only, never rows. You write the SQL. Start
+with catalog_info and apply its `hints` (quoting, default schema, row-limit
+syntax, concat operator) to any SQL you write. Find tables with
+schema_search_tables, columns with schema_search_columns, then take the
+column list from schema_describe_table and joins from schema_related_tables
+(use join_on verbatim). catalog_unavailable is a config problem: surface it.
+
+Details:
+- The snapshot is taken once per process. Call catalog_refresh only after a
+  migration ran this session or when results contradict the database; if it
+  still disagrees, suspect the DBSCHEMA_SCHEMAS filter.
+- no_match: try one different domain word, then schema_list_tables.
+- ambiguous / table_ambiguous: re-call with one of `candidates`.
+- not_found: the name is wrong; find the real one before retrying.
+- no_relations may mean the schema declares no FKs: infer join columns from
+  schema_describe_table and label the join as inferred.
+- Keep depth at 1 unless a direct join cannot reach the entity.
+- Credentials are environment-only; no tool takes a connection string.
+"""
+
+mcp = _Server("dbschema", instructions=INSTRUCTIONS)
 
 _index: SchemaIndex | None = None
 _load_error: str | None = None
@@ -73,7 +101,7 @@ def _stamp(idx: SchemaIndex, payload: dict[str, Any]) -> dict[str, Any]:
 
 # --- tools -------------------------------------------------------------------
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def catalog_info(refresh: bool = False) -> dict[str, Any]:
     """Connection, dialect, and size of the schema snapshot. Call this first in
     a session — the `hints` it returns are what make the SQL you write valid
@@ -115,7 +143,7 @@ def catalog_info(refresh: bool = False) -> dict[str, Any]:
     })
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def catalog_refresh() -> dict[str, Any]:
     """Discard the in-memory snapshot and re-introspect the database.
 
@@ -132,7 +160,7 @@ def catalog_refresh() -> dict[str, Any]:
     return catalog_info(refresh=True)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def schema_search_tables(query: str, max_results: int = 10) -> dict[str, Any]:
     """Find tables/views related to a concept. Answers "what table holds X?".
     Start here when you know the domain word but not the table name; use
@@ -168,7 +196,7 @@ def schema_search_tables(query: str, max_results: int = 10) -> dict[str, Any]:
     })
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def schema_search_columns(query: str, max_results: int = 20,
                           table: str | None = None) -> dict[str, Any]:
     """Find columns by name/comment across the database. Answers "what is the
@@ -207,7 +235,7 @@ def schema_search_columns(query: str, max_results: int = 20,
     })
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def schema_describe_table(table: str) -> dict[str, Any]:
     """Full definition of one table or view: columns (name, type, nullable,
     default, comment, is_pk), primary key, foreign keys (with referenced
@@ -252,7 +280,7 @@ def schema_describe_table(table: str) -> dict[str, Any]:
     return _stamp(idx, payload)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def schema_related_tables(table: str, depth: int = 1,
                           max_results: int = 50) -> dict[str, Any]:
     """Tables reachable from `table` over foreign keys, with ready-to-use join
@@ -293,7 +321,7 @@ def schema_related_tables(table: str, depth: int = 1,
     })
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def schema_list_tables(schema: str | None = None, kind: str | None = None,
                        max_results: int = 200) -> dict[str, Any]:
     """Flat inventory of tables/views: qualified name, kind, column count,

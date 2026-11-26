@@ -325,3 +325,20 @@ def test_max_workspaces_env_is_honoured(monkeypatch):
     assert server._new_pool().max_size == 3
     monkeypatch.setenv("ROSLYN_MCP_MAX_WORKSPACES", "garbage")
     assert server._new_pool().max_size == server.DEFAULT_MAX_WORKSPACES
+
+
+def test_server_publishes_instructions():
+    # Cross-tool guidance travels with the server so every MCP client gets it;
+    # Codex reads the first 512 characters when deciding how to use a server.
+    assert server.mcp.instructions
+    assert len(server.mcp.instructions.split("\n\n")[0]) <= 512
+
+
+def test_tools_annotated_read_only():
+    # Clients auto-approve on these hints; every tool here is read-only.
+    for t in asyncio.run(server.mcp.list_tools()):
+        assert t.annotations is not None, t.name
+        hints = t.annotations.model_dump(by_alias=True)  # wire names
+        assert hints["readOnlyHint"] is True, t.name
+        assert hints["destructiveHint"] is False, t.name
+        assert hints["openWorldHint"] is False, t.name
