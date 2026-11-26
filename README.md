@@ -47,7 +47,7 @@ step ahead of Grep; structure and output contract match.
 The kit's agents lean on three stdio MCP servers, each a standalone Python
 package in this repository. Register them in the target repository's
 `.mcp.json` (each server's README has a `uvx` snippet pinned to the
-`v1.1.0` tag that installs straight from GitHub) and the tools appear in the
+`v1.2.0` tag that installs straight from GitHub) and the tools appear in the
 agent's tool list, self-described.
 
 | Server | Answers | Used by |
